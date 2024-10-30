@@ -1,5 +1,7 @@
 # ModelServer
 
+ModelServer is a framework for deploying models that isolates the model environment from the project environment and decoups the model code from the project code. Information is transferred between the model code and the project code over tcp. Currently, LLM and VLM are supported.
+
 ## Installation
 
 **Step 1:** Create a new conda environment ``conda create -n model_server``
