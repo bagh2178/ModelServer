@@ -4,7 +4,7 @@ script_path = os.path.realpath(__file__)
 script_dir = os.path.dirname(script_path)
 parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
-from ModelServer.llm_server import LLM_Server
+from ModelServer.agent_server import Agent_Server
 
 
-llm_server = LLM_Server()
+agent_server = Agent_Server()

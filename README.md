@@ -21,7 +21,7 @@ ModelServer is a framework for deploying models that isolates the model environm
 **LLM:** 
 
 ```
-from model_server.llm_client import LLM_Client
+from ModelServer.llm_client import LLM_Client
 llm = LLM_Client()
 prompt = 'Hello'
 response = llm(prompt)
@@ -32,7 +32,7 @@ print(response)
 
 ```
 from PIL import Image
-from model_server.vlm_client import VLM_Client
+from ModelServer.vlm_client import VLM_Client
 vlm = VLM_Client()
 prompt = 'Describe the objects in the image.'
 img_path = '/path/to/the/image'
