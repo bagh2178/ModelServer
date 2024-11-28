@@ -1,4 +1,4 @@
-from ..models.agent import Agent
+from ..models.agent.agent import Agent
 from ..tcp import TCPServer
 
 
