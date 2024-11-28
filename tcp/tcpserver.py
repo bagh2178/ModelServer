@@ -22,17 +22,14 @@ class TCPServer:
                 print(f"\033[92mREADY\033[0m")
                 conn, addr = s.accept()
                 with conn:
-                    print(f"Connected by {addr}")
-                    data_length = struct.unpack('>I', conn.recv(4))[0]
-                    # data = conn.recv(data_length)
-                    data = receive_data(conn, data_length)
-                    received_data = pickle.loads(data)
-                    print("Received data:", received_data)
-                    processed_data = self.processor(received_data)
-                    encoded_data = pickle.dumps(processed_data)
-                    conn.sendall(struct.pack('>I', len(encoded_data)) + encoded_data)
-
-
-if __name__ == "__main__":
-    server = TCPServer('127.0.0.1', 12345)
-    server.start()
+                    try:
+                        print(f"Connected by {addr}")
+                        data_length = struct.unpack('>I', conn.recv(4))[0]
+                        data = receive_data(conn, data_length)
+                        received_data = pickle.loads(data)
+                        print("Received data:", received_data)
+                        processed_data = self.processor(received_data)
+                        encoded_data = pickle.dumps(processed_data)
+                        conn.sendall(struct.pack('>I', len(encoded_data)) + encoded_data)
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
