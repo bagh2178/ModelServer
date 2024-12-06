@@ -15,6 +15,8 @@ class TCPServer:
 
     def start(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Allow the server to bind to an address that is in TIME_WAIT state.
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.host, self.port))
             s.listen()
             print(f"Server listening on {self.host}:{self.port}")
