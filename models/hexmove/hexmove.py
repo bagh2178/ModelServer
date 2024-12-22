@@ -226,6 +226,7 @@ class Hexmove():
     def record_camera_pose(self, camera_id, record_time=1.0):
         pose_list = []
         timestamp_list = []
+        self.init_camera(self.tracking_method)
         tracking_fps = self.camera_list[self.tracking_method]['camera'].get_fps()
         num_record_frame = int(tracking_fps * record_time)
         for i in range(num_record_frame):
