@@ -36,7 +36,3 @@ class TCPServer:
                     except Exception as e:
                         print(f"An error occurred: {e}")
 
-
-if __name__ == "__main__":
-    server = TCPServer('127.0.0.1', 12345)
-    server.start()
