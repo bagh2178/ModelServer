@@ -1,7 +1,7 @@
 from ..tcp import TCPClient
 
 
-class Agent_Client():
+class Hexmove_Client():
     def __init__(self):
         self.tcpclient = TCPClient('127.0.0.1', 7002)
 
