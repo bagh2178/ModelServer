@@ -64,7 +64,8 @@ class FemtoBolt():
         try:
             frames = self.pipeline.wait_for_frames(100)
             color_frame = frames.get_color_frame()
-            timestamp = color_frame.get_system_timestamp_us()
+            depth_frame = frames.get_depth_frame()
+            timestamp = 0.5 * (color_frame.get_system_timestamp_us() + depth_frame.get_system_timestamp_us())
             timestamp = 1e-6 * timestamp
             camera_param = self.pipeline.get_camera_param()
             points = frames.get_point_cloud(camera_param)
@@ -78,13 +79,44 @@ class FemtoBolt():
         try:
             frames = self.pipeline.wait_for_frames(100)
             color_frame = frames.get_color_frame()
-            timestamp = color_frame.get_system_timestamp_us()
+            depth_frame = frames.get_depth_frame()
+            timestamp = 0.5 * (color_frame.get_system_timestamp_us() + depth_frame.get_system_timestamp_us())
             timestamp = 1e-6 * timestamp
             camera_param = self.pipeline.get_camera_param()
             points = frames.get_color_point_cloud(camera_param)
             points[:, :3] = points[:, :3] * self.depth_scale
             filtered_points = points[~np.all(points[:, :3] == 0, axis=1)]
             return filtered_points, timestamp
+        except:
+            self.pipeline.stop()
+
+    def capture_rgbd_and_color_point_cloud(self, zoom_factor=1.0):
+        try:
+            frames = self.pipeline.wait_for_frames(100)
+            color_frame = frames.get_color_frame()
+            depth_frame = frames.get_depth_frame()
+            timestamp = 0.5 * (color_frame.get_system_timestamp_us() + depth_frame.get_system_timestamp_us())
+            timestamp = 1e-6 * timestamp
+
+            width = color_frame.get_width()
+            height = color_frame.get_height()
+            color_image = np.asanyarray(color_frame.get_data())
+            color_image = np.resize(color_image, (height, width, 3))
+
+            width = depth_frame.get_width()
+            height = depth_frame.get_height()
+            depth_image = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
+            depth_image = depth_image.reshape((height, width))
+
+            camera_param = self.pipeline.get_camera_param()
+            points = frames.get_color_point_cloud(camera_param)
+            points[:, :3] = points[:, :3] * self.depth_scale
+            filtered_points = points[~np.all(points[:, :3] == 0, axis=1)]
+
+            # color_image = zoom(color_image, (zoom_factor, zoom_factor, 1))
+            # depth_image = zoom(depth_image, (zoom_factor, zoom_factor, 1))
+
+            return color_image, depth_image, filtered_points, timestamp
         except:
             self.pipeline.stop()
 

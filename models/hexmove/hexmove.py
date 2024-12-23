@@ -18,6 +18,8 @@ from .point_cloud_generator import generate_point_cloud
 class Hexmove():
     def __init__(self) -> None:
         self.save_image_dir = '/home/tl/yh/RGBD/images/{}'
+        if not os.path.exists(self.save_image_dir):
+            os.makedirs(self.save_image_dir)
         self.camera_list = {
             'D435i_top': {
                 'serial_number': '337322070914',
@@ -60,11 +62,11 @@ class Hexmove():
                 rgb_image, depth_image, timestamp = self.camera_list[camera_id]['camera'].capture_rgbd_image()
                 closest_index = self.timestamp_match(timestamp_list, timestamp)
                 pose = pose_list[closest_index]
-                self.save_image(serial_number, rgb_image, depth_image)
+                self.save_image(serial_number, rgb_image, depth_image, timestamp)
                 return rgb_image, depth_image, pose, timestamp
             else:
                 rgb_image, depth_image, timestamp = self.camera_list[camera_id]['camera'].capture_rgbd_image()
-                self.save_image(serial_number, rgb_image, depth_image)
+                self.save_image(serial_number, rgb_image, depth_image, timestamp)
                 return rgb_image, depth_image, timestamp
         elif action == 'get_tracking_pose':
             position, orientation, timestamp = self.get_tracking_pose()
@@ -95,8 +97,6 @@ class Hexmove():
                 closest_index = self.timestamp_match(timestamp_list, timestamp)
                 pose = pose_list[closest_index]
                 position, orientation = pose
-                # position, orientation, timestamp_pose = self.get_robot_pose()
-                # points[:, :3] = (self.camera_list[camera_id]['R_robot_to_camera'] @ points[:, :3].T).T + self.camera_list[camera_id]['T_robot_to_camera']
                 points[:, :3] = (R.from_quat(quat_wxyz_to_xyzw(orientation)).as_matrix() @ points[:, :3].T).T + position
             # rgb_image, depth_image = self.camera_list[camera_id]['camera'].capture_rgbd_image()
             # x, y, yaw = self.get_robot_xy_and_yaw()
@@ -111,7 +111,10 @@ class Hexmove():
             # point_cloud_world, points_world, colors = generate_point_cloud(depth_image, rgb_image, fx, fy, cx, cy, depth_scale, x, y, yaw, self.camera_list[camera_id]['R_robot_to_camera'], self.camera_list[camera_id]['T_robot_to_camera'])
 
             # 保存点云为TXT文件（带颜色）
-            output_file_path_world = os.path.join(self.save_image_dir.format(serial_number), f'{time.time()}_world.txt')
+            output_file_path_world = os.path.join(self.save_image_dir.format(serial_number), 'pc')
+            if not os.path.exists(output_file_path_world):
+                os.makedirs(output_file_path_world)
+            output_file_path_world = os.path.join(output_file_path_world, f'{timestamp}.txt')
             # np.savetxt(output_file_path_world, np.hstack((points_world, colors)), fmt='%.6f', delimiter=' ', header='X Y Z R G B')
             np.savetxt(output_file_path_world, points, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
 
@@ -175,10 +178,11 @@ class Hexmove():
             elif camera_id in ['FemtoBolt_down']:
                 self.camera_list[camera_id]['camera'] = FemtoBolt(serial_number)
 
-    def save_image(self, serial_number, rgb_image, depth_image):
-        time_str = str(time.time())
-        rgb_image_path = os.path.join(self.save_image_dir.format(serial_number), 'rgb', time_str + '.png')
-        depth_image_path = os.path.join(self.save_image_dir.format(serial_number), 'depth', time_str + '.png')
+    def save_image(self, serial_number, rgb_image, depth_image, timestamp=None):
+        if timestamp is None:
+            timestamp = time.time()
+        rgb_image_path = os.path.join(self.save_image_dir.format(serial_number), 'rgb', f'{timestamp}.png')
+        depth_image_path = os.path.join(self.save_image_dir.format(serial_number), 'depth', f'{timestamp}.png')
         Image.fromarray(rgb_image).save(rgb_image_path)
         Image.fromarray(depth_image, mode='I;16').save(depth_image_path)
 
@@ -228,7 +232,7 @@ class Hexmove():
         timestamp_list = []
         self.init_camera(self.tracking_method)
         tracking_fps = self.camera_list[self.tracking_method]['camera'].get_fps()
-        num_record_frame = int(tracking_fps * record_time)
+        num_record_frame = int(0.5 * tracking_fps * record_time)
         for i in range(num_record_frame):
             camera_position, camera_orientation, timestamp = self.get_camera_pose(camera_id)
             pose_list.append((camera_position, camera_orientation))
