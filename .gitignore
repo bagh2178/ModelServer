@@ -1,9 +1,8 @@
 __pycache__/
 models/hexmove/Log
 models/hexmove/agent_scan.py
-models/hexmove/color_map.npy
 models/hexmove/debug_torch.py
 models/hexmove/global_map.npy
 models/hexmove/hex_sem_map.py
 models/hexmove/path_planner.py
-models/hexmove/process_map_debug_torch.npy
+**/**.npy
