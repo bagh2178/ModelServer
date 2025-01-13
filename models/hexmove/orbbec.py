@@ -5,27 +5,38 @@ import pyorbbecsdk as ob
 from scipy.ndimage import zoom
 
 
-class FemtoBolt():
+class OrbbecCamera():
     def __init__(self, serial_number):
         self.serial_number = serial_number
         ctx = ob.Context()
         device_list = ctx.query_devices()
-        device = device_list.get_device_by_serial_number(serial_number)
-        self.pipeline = ob.Pipeline(device)
-        device = self.pipeline.get_device()
-        device_info = device.get_device_info()
-        device_pid = device_info.get_pid()
+        self.device = device_list.get_device_by_serial_number(self.serial_number)
+        self.pipeline = ob.Pipeline(self.device)
+        self.device = self.pipeline.get_device()
+        self.device_info = self.device.get_device_info()
+        self.device_name = self.device_info.get_name()
         config = ob.Config()
-        self.depth_scale = 0.001
 
         depth_profile_list = self.pipeline.get_stream_profile_list(ob.OBSensorType.DEPTH_SENSOR)
-        # depth_profile = depth_profile_list.get_video_stream_profile(512, 512, ob.OBFormat.Y16, 30)
-        depth_profile = depth_profile_list.get_video_stream_profile(640, 576, ob.OBFormat.Y16, 30)
+        color_profile_list = self.pipeline.get_stream_profile_list(ob.OBSensorType.COLOR_SENSOR)
+        if self.device_name == 'Femto Bolt':
+            self.device.set_bool_property(ob.OBPropertyID(2000), True)  # OB_PROP_COLOR_AUTO_EXPOSURE_BOOL
+            self.device.set_int_property(ob.OBPropertyID(2001), 200)  # OB_PROP_COLOR_EXPOSURE_INT
+            self.device.set_int_property(ob.OBPropertyID(2002), 0)  # OBPropertyID.OB_PROP_COLOR_GAIN_INT
+            self.device.set_bool_property(ob.OBPropertyID(2003), False)  # OB_PROP_COLOR_AUTO_WHITE_BALANCE_BOOL
+            self.device.set_int_property(ob.OBPropertyID(2004), 4000)  # OB_PROP_COLOR_WHITE_BALANCE_INT
+            # depth_profile = depth_profile_list.get_video_stream_profile(512, 512, ob.OBFormat.Y16, 30)
+            depth_profile = depth_profile_list.get_video_stream_profile(640, 576, ob.OBFormat.Y16, 30)
+            color_profile = color_profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.RGB, 30)
+            # color_profile = profile_list.get_video_stream_profile(1920, 1080, ob.OBFormat.RGB, 30)
+            # color_profile = profile_list.get_video_stream_profile(3840, 2160, ob.OBFormat.RGB, 30)
+            self.depth_scale = 0.001
+        elif self.device_name == 'Orbbec Gemini 336L':
+            self.device.set_int_property(ob.OBPropertyID(23), 4000)  # OB_PROP_MAX_DEPTH_INT
+            depth_profile = depth_profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.Y16, 30)
+            color_profile = color_profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.RGB, 30)
+            self.depth_scale = 0.001
         config.enable_stream(depth_profile)
-        profile_list = self.pipeline.get_stream_profile_list(ob.OBSensorType.COLOR_SENSOR)
-        color_profile = profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.RGB, 30)
-        # color_profile = profile_list.get_video_stream_profile(1920, 1080, ob.OBFormat.RGB, 30)
-        # color_profile = profile_list.get_video_stream_profile(3840, 2160, ob.OBFormat.RGB, 30)
         config.enable_stream(color_profile)
         config.set_align_mode(ob.OBAlignMode.SW_MODE)
 
@@ -120,6 +131,10 @@ class FemtoBolt():
         except:
             self.pipeline.stop()
 
+    def capture_camera_param(self):
+        camera_param = self.pipeline.get_camera_param()
+        return camera_param
+
     def capture_intrinsic(self):
         fx = self.pipeline.get_camera_param().rgb_intrinsic.fx
         fy = self.pipeline.get_camera_param().rgb_intrinsic.fy
@@ -140,7 +155,7 @@ class FemtoBolt():
 
 if __name__ == '__main__':
     serial_number = 'CL8M841006W'  # 替换为你实际的设备序列号
-    camera = FemtoBolt(serial_number)
+    camera = OrbbecCamera(serial_number)
     while True:
         # color_image, depth_image = camera.capture_rgbd_image()
         color_image, depth_image = camera.capture_color_point_cloud()

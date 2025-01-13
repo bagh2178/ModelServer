@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation as R
 from .utils import quat_wxyz_to_xyzw, quat_xyzw_to_wxyz
 # from .realsense import capture_rgbd_image, capture_intrinsic
 from .realsense import D435i, T265
-from .orbbec import FemtoBolt
+from .orbbec import OrbbecCamera
 from .odom_subscriber import get_odom_pose, get_odom_xy_and_yaw, get_camera_xy_and_yaw
 # from .odom_subscriber import OdomSubscriber
 from .point_cloud_generator import generate_point_cloud
@@ -18,8 +18,6 @@ from .point_cloud_generator import generate_point_cloud
 class Hexmove():
     def __init__(self) -> None:
         self.save_image_dir = '/home/tl/yh/RGBD/images/{}'
-        if not os.path.exists(self.save_image_dir):
-            os.makedirs(self.save_image_dir)
         self.camera_list = {
             'D435i_top': {
                 'serial_number': '337322070914',
@@ -38,8 +36,14 @@ class Hexmove():
             },
             'FemtoBolt_down': {
                 'serial_number': 'CL8M841006W',
-                'R_robot_to_camera': np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]]),
+                # 'R_robot_to_camera': np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]]),
+                'R_robot_to_camera': np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]]) @ R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix(),
                 'T_robot_to_camera': np.array([0.43, 0, 0.88]),
+            },
+            '336L_down': {
+                'serial_number': 'CP828410001R',
+                'R_robot_to_camera': np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]]),
+                'T_robot_to_camera': np.array([0.35, 0, 1.0]),
             },
         }
         self.tracking_method = 'odom'
@@ -58,11 +62,12 @@ class Hexmove():
             serial_number = self.camera_list[camera_id]['serial_number']
             self.init_camera(camera_id)
             if 'pose' in commond:
-                pose_list, timestamp_list = self.record_camera_pose(camera_id)
+                pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5)
                 rgb_image, depth_image, timestamp = self.camera_list[camera_id]['camera'].capture_rgbd_image()
                 closest_index = self.timestamp_match(timestamp_list, timestamp)
                 pose = pose_list[closest_index]
-                self.save_image(serial_number, rgb_image, depth_image, timestamp)
+                camera_param = self.camera_list[camera_id]['camera'].capture_camera_param()
+                self.save_image(serial_number, rgb_image, depth_image, camera_param, pose, timestamp)
                 return rgb_image, depth_image, pose, timestamp
             else:
                 rgb_image, depth_image, timestamp = self.camera_list[camera_id]['camera'].capture_rgbd_image()
@@ -91,8 +96,8 @@ class Hexmove():
             serial_number = self.camera_list[camera_id]['serial_number']
             # if camera_id in ['D435i_top', 'D435i_down']:
             #     self.camera_list[camera_id]['camera'] = D435i(serial_number)
-            if camera_id in ['FemtoBolt_down']:
-                pose_list, timestamp_list = self.record_camera_pose(camera_id)
+            if camera_id in ['FemtoBolt_down', '336L_down']:
+                pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5)
                 points, timestamp = self.camera_list[camera_id]['camera'].capture_color_point_cloud()
                 closest_index = self.timestamp_match(timestamp_list, timestamp)
                 pose = pose_list[closest_index]
@@ -175,16 +180,26 @@ class Hexmove():
                 self.camera_list[camera_id]['camera'] = D435i(serial_number)
             elif camera_id in ['T265']:
                 self.camera_list[camera_id]['camera'] = T265(serial_number)
-            elif camera_id in ['FemtoBolt_down']:
-                self.camera_list[camera_id]['camera'] = FemtoBolt(serial_number)
+            elif camera_id in ['FemtoBolt_down', '336L_down']:
+                self.camera_list[camera_id]['camera'] = OrbbecCamera(serial_number)
 
-    def save_image(self, serial_number, rgb_image, depth_image, timestamp=None):
+    def save_image(self, serial_number, rgb_image, depth_image, camera_param=None, pose=None, timestamp=None):
         if timestamp is None:
             timestamp = time.time()
         rgb_image_path = os.path.join(self.save_image_dir.format(serial_number), 'rgb', f'{timestamp}.png')
         depth_image_path = os.path.join(self.save_image_dir.format(serial_number), 'depth', f'{timestamp}.png')
         Image.fromarray(rgb_image).save(rgb_image_path)
         Image.fromarray(depth_image, mode='I;16').save(depth_image_path)
+        if camera_param is not None:
+            camera_param_path = os.path.join(self.save_image_dir.format(serial_number), 'intrinsic', f'{timestamp}.txt')
+            with open(camera_param_path, 'w') as file:
+                file.write(camera_param.__str__())
+        if pose is not None:
+            pose_path = os.path.join(self.save_image_dir.format(serial_number), 'extrinsic', f'{timestamp}.txt')
+            extrinsic = np.eye(4)
+            extrinsic[:3, :3] = R.from_quat(quat_wxyz_to_xyzw(pose[1])).as_matrix()
+            extrinsic[:3, 3] = pose[0]
+            np.savetxt(pose_path, extrinsic)
 
     def get_tracking_pose(self):
         self.init_camera(self.tracking_method)
@@ -232,7 +247,7 @@ class Hexmove():
         timestamp_list = []
         self.init_camera(self.tracking_method)
         tracking_fps = self.camera_list[self.tracking_method]['camera'].get_fps()
-        num_record_frame = int(0.5 * tracking_fps * record_time)
+        num_record_frame = int(tracking_fps * record_time)
         for i in range(num_record_frame):
             camera_position, camera_orientation, timestamp = self.get_camera_pose(camera_id)
             pose_list.append((camera_position, camera_orientation))
