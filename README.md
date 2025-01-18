@@ -60,7 +60,7 @@ get_rgbd_intrinsic
 Code example:
 
 ```
-from ModelServer.client.hexmove import Hexmove_Client
+from ModelServer import Hexmove_Client
 
 agent = Hexmove_Client()
 
