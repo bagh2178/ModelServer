@@ -1,3 +1,4 @@
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
@@ -72,10 +73,13 @@ def get_odom_pose():
         rclpy.shutdown()
 
     position = (odom_subscriber.position_x, odom_subscriber.position_y, odom_subscriber.position_z)
-    orientation = (odom_subscriber.orientation_w, odom_subscriber.orientation_x, odom_subscriber.orientation_y, odom_subscriber.orientation_z)
+    orientation = (odom_subscriber.orientation_x, odom_subscriber.orientation_y, odom_subscriber.orientation_z, odom_subscriber.orientation_w)
     timestamp = 0
+    robot_pose = np.eye(4)
+    robot_pose[:3, :3] = R.from_quat(orientation).as_matrix()
+    robot_pose[:3, 3] = np.array(position)
 
-    return position, orientation, timestamp
+    return robot_pose, timestamp
 
 def get_odom_xy_and_yaw():
     position, orientation = get_odom_pose()
