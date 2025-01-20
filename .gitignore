@@ -15,3 +15,6 @@ models/hexmove/path_planner.py
 models/get_object_point.py
 models/debug_torch.py
 models/debug_arm.py
+models/Grounded_Segment_Anything/
+models/Grounded-SAM-2/
+models/GroundingDINO/
