@@ -9,9 +9,12 @@ from PIL import Image
 from scipy.spatial.transform import Rotation as R
 from piper_sdk import *
 from .utils import quat_wxyz_to_xyzw, quat_xyzw_to_wxyz, timestamp_match, pose_to_matrix, matrix_to_pose
+from piper_sdk import *
+from .utils import quat_wxyz_to_xyzw, quat_xyzw_to_wxyz, timestamp_match, pose_to_matrix, matrix_to_pose
 # from .realsense import capture_rgbd_image, capture_intrinsic
 from .realsense import D435i, T265
 from .orbbec import OrbbecCamera
+from .piper import PiperArm
 from .piper import PiperArm
 from .odom_subscriber import get_odom_pose, get_odom_xy_and_yaw, get_camera_xy_and_yaw
 # from .odom_subscriber import OdomSubscriber
@@ -52,9 +55,19 @@ class Hexmove():
                                                [0, -1, 0, 1.3],
                                                [0, 0, 0, 1]]),
                 # 'T_robot_to_camera': np.array([0.35, 0, 1.3]),
+                'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
+                                               [-1, 0, 0, 0],
+                                               [0, -1, 0, 1.3],
+                                               [0, 0, 0, 1]]),
+                # 'T_robot_to_camera': np.array([0.35, 0, 1.3]),
             },
             'D435i_down': {
                 'serial_number': '327122078142',
+                'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
+                                               [-1, 0, 0, 0],
+                                               [0, -1, 0, 0.88],
+                                               [0, 0, 0, 1]]),
+                # 'T_robot_to_camera': np.array([0.43, 0, 0.88]),
                 'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
                                                [-1, 0, 0, 0],
                                                [0, -1, 0, 0.88],
@@ -81,6 +94,13 @@ class Hexmove():
             },
             'FemtoBolt_down': {
                 'serial_number': 'CL8M841006W',
+                # 'R_robot_to_camera': np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]]) @ R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix(),
+                'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
+                                               [-1, 0, 0, 0],
+                                               [0, -1, 0, 0.88],
+                                               [0, 0, 0, 1]]),
+                # 'T_robot_to_camera': np.array([0.43, 0, 0.88]),
+                'rotation': R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix()
                 # 'R_robot_to_camera': np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]]) @ R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix(),
                 'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
                                                [-1, 0, 0, 0],
@@ -119,9 +139,15 @@ class Hexmove():
         self.move_position_error = 0.2
         self.move_orientation_error = 0.3
         self.reset()
+        self.zero_point = np.eye(4)
+        self.goal = np.eye(4)
+        self.move_position_error = 0.2
+        self.move_orientation_error = 0.3
+        self.reset()
 
     def __call__(self, commond):
         action = commond[0]
+        if action == 'move_forward':
         if action == 'move_forward':
             os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 1.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" -1')
             return 'move_forward done'
@@ -485,11 +511,25 @@ class Hexmove():
         robot_pose, timestamp = self.get_robot_pose()
         orientation = robot_pose[:3, :3]
         position = robot_pose[:3, 3]
+        # position, orientation, timestamp = self.get_robot_pose()
+        robot_pose, timestamp = self.get_robot_pose()
+        orientation = robot_pose[:3, :3]
+        position = robot_pose[:3, 3]
         position_x, position_y = position[0], position[1]
+        roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
         roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
         return position_x, position_y, yaw
     
     def get_camera_pose(self, camera_id):
+        # position, orientation, timestamp = self.get_robot_pose()
+        # camera_position = position + orientation @ self.camera_list[camera_id]['T_robot_to_camera']
+        # camera_orientation = orientation @ self.camera_list[camera_id]['R_robot_to_camera']
+        # # camera_orientation = quat_xyzw_to_wxyz(camera_orientation.as_quat())
+        # return camera_position, camera_orientation, timestamp
+
+        robot_pose, timestamp = self.get_robot_pose()
+        camera_pose = robot_pose @ self.device_list[camera_id]['T_robot_to_camera']
+        return camera_pose, timestamp
         # position, orientation, timestamp = self.get_robot_pose()
         # camera_position = position + orientation @ self.camera_list[camera_id]['T_robot_to_camera']
         # camera_orientation = orientation @ self.camera_list[camera_id]['R_robot_to_camera']
@@ -505,12 +545,19 @@ class Hexmove():
         timestamp_list = []
         self.init_device(self.tracking_method)
         tracking_fps = self.device_list[self.tracking_method]['device'].get_fps()
+        self.init_device(self.tracking_method)
+        tracking_fps = self.device_list[self.tracking_method]['device'].get_fps()
         num_record_frame = int(tracking_fps * record_time)
         for i in range(num_record_frame):
             # camera_position, camera_orientation, timestamp = self.get_camera_pose(camera_id)
             # pose_list.append((camera_position, camera_orientation))
             camera_pose, timestamp = self.get_camera_pose(camera_id)
             pose_list.append(camera_pose)
+            # camera_position, camera_orientation, timestamp = self.get_camera_pose(camera_id)
+            # pose_list.append((camera_position, camera_orientation))
+            camera_pose, timestamp = self.get_camera_pose(camera_id)
+            pose_list.append(camera_pose)
             timestamp_list.append(timestamp)
         return pose_list, timestamp_list
+    
     
