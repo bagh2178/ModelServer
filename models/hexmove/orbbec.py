@@ -2,7 +2,6 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 import pyorbbecsdk as ob
-from scipy.ndimage import zoom
 
 
 class OrbbecCamera():
@@ -68,9 +67,6 @@ class OrbbecCamera():
             depth_image = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
             depth_image = depth_image.reshape((height, width))
 
-            # color_image = zoom(color_image, (zoom_factor, zoom_factor, 1))
-            # depth_image = zoom(depth_image, (zoom_factor, zoom_factor, 1))
-
             return color_image, depth_image, timestamp
         except:
             self.pipeline.stop()
@@ -128,9 +124,6 @@ class OrbbecCamera():
             points[:, :3] = points[:, :3] * self.depth_scale
             filtered_points = points[~np.all(points[:, :3] == 0, axis=1)]
 
-            # color_image = zoom(color_image, (zoom_factor, zoom_factor, 1))
-            # depth_image = zoom(depth_image, (zoom_factor, zoom_factor, 1))
-
             return color_image, depth_image, filtered_points, timestamp
         except:
             self.pipeline.stop()
@@ -153,24 +146,3 @@ class OrbbecCamera():
         depth_intrinsics = (fx, fy, cx, cy)
 
         return color_intrinsics, depth_intrinsics
-
-
-
-
-if __name__ == '__main__':
-    serial_number = 'CL8M841006W'  # 替换为你实际的设备序列号
-    camera = OrbbecCamera(serial_number)
-    while True:
-        # color_image, depth_image = camera.capture_rgbd_image()
-        color_image, depth_image = camera.capture_color_point_cloud()
-        # color_intrinsics, depth_intrinsics = camera.capture_intrinsic('327122078142')
-        # print('color_intrinsics', color_intrinsics)
-        # print('depth_intrinsics', depth_intrinsics)
-
-        # 显示图像
-        color_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR)
-        cv2.imshow('RGB Image', color_image)
-        # depth_image_display = (depth_image * 255 / np.max(depth_image)).astype(np.uint8)  # 归一化并转换回uint8以显示
-        # cv2.imshow('Depth Image', depth_image_display)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()

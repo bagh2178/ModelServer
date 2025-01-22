@@ -13,15 +13,15 @@ from .utils import quat_wxyz_to_xyzw, quat_xyzw_to_wxyz, timestamp_match, pose_t
 from .realsense import D435i, T265
 from .orbbec import OrbbecCamera
 from .piper import PiperArm
-from .odom_subscriber import get_odom_pose, get_odom_xy_and_yaw, get_camera_xy_and_yaw
+from .base_odom import get_odom_pose, get_odom_xy_and_yaw, get_camera_xy_and_yaw
 from .point_cloud_generator import generate_point_cloud
 
 
 class Hexmove():
     def __init__(self) -> None:
         self.save_image_dir = '/home/tl/yh/ModelServer/models/hexmove/data/images/{}'
-        self.save_image_dir = '/home/tl/yh/data/{}/episode_{:0>6}/rgb/{}'
-        self.save_arm_pose_dir = '/home/tl/yh/data/{}/episode_{:0>6}/pose'
+        self.save_rdt_image_dir = '/home/tl/yh/data/{}/episode_{:0>6}/rgb/{}'
+        self.save_rdt_arm_pose_dir = '/home/tl/yh/data/{}/episode_{:0>6}/pose'
         self.supported_commonds = [
             'robot_pose_reset',
             'get_rgbd_image',
@@ -413,18 +413,18 @@ class Hexmove():
         self.init_device(self.tracking_method)
         position, orientation, timestamp = self.device_list[self.tracking_method]['device'].get_pose()
         orientation = R.from_quat(quat_wxyz_to_xyzw(orientation)).as_matrix()
-        T = np.eye(4)
-        T[:3, :3] = orientation
-        T[:3, 3] = position
-        return T, timestamp
+        tracking_pose = np.eye(4)
+        tracking_pose[:3, :3] = orientation
+        tracking_pose[:3, 3] = position
+        return tracking_pose, timestamp
 
     def get_robot_pose_zero(self, commond=None):
         if self.tracking_method == 'odom':
             robot_pose, timestamp = get_odom_pose()
         elif self.tracking_method == 'T265':
-            T_tracking, timestamp = self.get_tracking_pose()
+            tracking_pose, timestamp = self.get_tracking_pose()
             T_robot_to_camera = self.device_list[self.tracking_method]['T_robot_to_camera']
-            robot_pose = T_robot_to_camera @ T_tracking @ np.linalg.inv(T_robot_to_camera)
+            robot_pose = T_robot_to_camera @ tracking_pose @ np.linalg.inv(T_robot_to_camera)
         return robot_pose, timestamp
 
     def robot_move_openloop(self, commond):
@@ -499,14 +499,10 @@ class Hexmove():
                 file.write(camera_param.__str__())
         if pose is not None:
             pose_path = os.path.join(self.save_image_dir.format(serial_number), 'extrinsic', f'{timestamp}.txt')
-            # extrinsic = np.eye(4)
-            # extrinsic[:3, :3] = R.from_quat(quat_wxyz_to_xyzw(pose[1])).as_matrix()
-            # extrinsic[:3, 3] = pose[0]
-            # np.savetxt(pose_path, extrinsic)
             np.savetxt(pose_path, pose)
 
     def save_image_rdt(self, rgb_image, position, episode_index, index):
-        rgb_image_dir = self.save_image_dir.format('arm_right', episode_index, position)
+        rgb_image_dir = self.save_rdt_image_dir.format('arm_right', episode_index, position)
         if not os.path.exists(rgb_image_dir):
             os.makedirs(rgb_image_dir)
         rgb_image_path = os.path.join(rgb_image_dir, f'{index:0>6}.jpg')
@@ -524,7 +520,7 @@ class Hexmove():
         pickle.dump(arm_pose, open(arm_pose_path, 'wb'))
 
     def save_arm_pose_rdt(self, arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, timestamp=None):
-        arm_pose_dir = self.save_arm_pose_dir.format('arm_right', episode_index)
+        arm_pose_dir = self.save_rdt_arm_pose_dir.format('arm_right', episode_index)
         if not os.path.exists(arm_pose_dir):
             os.makedirs(arm_pose_dir)
         arm_pose_path = os.path.join(arm_pose_dir, f'{index:0>6}.pkl')
@@ -537,16 +533,10 @@ class Hexmove():
         pickle.dump(arm_pose, open(arm_pose_path, 'wb'))
 
     def get_robot_xy_and_yaw(self):
-        # position, orientation, timestamp = self.get_robot_pose()
-        robot_pose, timestamp = self.get_robot_pose()
-        orientation = robot_pose[:3, :3]
-        position = robot_pose[:3, 3]
-        # position, orientation, timestamp = self.get_robot_pose()
         robot_pose, timestamp = self.get_robot_pose()
         orientation = robot_pose[:3, :3]
         position = robot_pose[:3, 3]
         position_x, position_y = position[0], position[1]
-        roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
         roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
         return position_x, position_y, yaw
     
