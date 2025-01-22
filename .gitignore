@@ -12,6 +12,7 @@ models/hexmove/debug_torch.py
 models/hexmove/global_map.npy
 models/hexmove/hex_sem_map.py
 models/hexmove/path_planner.py
+models/hexmove/odom_subscriber.py
 models/get_object_point.py
 models/debug_torch.py
 models/debug_arm.py
