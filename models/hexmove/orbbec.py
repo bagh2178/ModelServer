@@ -32,7 +32,11 @@ class OrbbecCamera():
             # color_profile = profile_list.get_video_stream_profile(3840, 2160, ob.OBFormat.RGB, 30)
             self.depth_scale = 0.001
         elif self.device_name == 'Orbbec Gemini 336L':
-            self.device.set_int_property(ob.OBPropertyID(23), 4000)  # OB_PROP_MAX_DEPTH_INT
+            self.device.set_bool_property(ob.OBPropertyID(2000), True)  # OB_PROP_COLOR_AUTO_EXPOSURE_BOOL
+            self.device.set_int_property(ob.OBPropertyID(2001), 200)  # OB_PROP_COLOR_EXPOSURE_INT
+            self.device.set_int_property(ob.OBPropertyID(2002), 0)  # OBPropertyID.OB_PROP_COLOR_GAIN_INT
+            self.device.set_bool_property(ob.OBPropertyID(2003), False)  # OB_PROP_COLOR_AUTO_WHITE_BALANCE_BOOL
+            self.device.set_int_property(ob.OBPropertyID(2004), 4000)  # OB_PROP_COLOR_WHITE_BALANCE_INT
             depth_profile = depth_profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.Y16, 30)
             color_profile = color_profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.RGB, 30)
             self.depth_scale = 0.001

@@ -20,7 +20,7 @@ from .point_cloud_generator import generate_point_cloud
 class Hexmove():
     def __init__(self) -> None:
         self.save_image_dir = '/home/tl/yh/ModelServer/models/hexmove/data/images/{}'
-        self.save_image_dir = '/home/tl/yh/data/{}/episode_{:0>6}/rgb'
+        self.save_image_dir = '/home/tl/yh/data/{}/episode_{:0>6}/rgb/{}'
         self.save_arm_pose_dir = '/home/tl/yh/data/{}/episode_{:0>6}/pose'
         self.supported_commonds = [
             'robot_pose_reset',
@@ -216,11 +216,12 @@ class Hexmove():
         camera_id = commond[1]
         episode_index = commond[2]
         index = commond[3]
+        position = commond[4]
         serial_number = self.device_list[camera_id]['serial_number']
         self.init_device(camera_id)
         rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
         if 'save' in commond:
-            self.save_image_rdt(rgb_image, episode_index, index)
+            self.save_image_rdt(rgb_image, position, episode_index, index)
         return timestamp
 
     def get_pointcloud(self, commond):
@@ -504,11 +505,11 @@ class Hexmove():
             # np.savetxt(pose_path, extrinsic)
             np.savetxt(pose_path, pose)
 
-    def save_image_rdt(self, rgb_image, episode_index, index):
-        rgb_image_dir = self.save_image_dir.format('arm_right', episode_index)
+    def save_image_rdt(self, rgb_image, position, episode_index, index):
+        rgb_image_dir = self.save_image_dir.format('arm_right', episode_index, position)
         if not os.path.exists(rgb_image_dir):
             os.makedirs(rgb_image_dir)
-        rgb_image_path = os.path.join(rgb_image_dir, f'{index:0>6}.png')
+        rgb_image_path = os.path.join(rgb_image_dir, f'{index:0>6}.jpg')
         Image.fromarray(rgb_image).save(rgb_image_path)
 
     def save_arm_pose(self, arm_id, arm_end_pose, arm_joint, arm_gripper_pose, timestamp=None):
