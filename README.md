@@ -2,33 +2,7 @@
 
 ModelServer is a framework for deploying models that isolates the model environment from the project environment and decoups the model code from the project code. Information is transferred between the model code and the project code over tcp. Currently, Hexmove Robot are supported. You can install ModelServer on robot and upper computer, then call api on upper computer to read and control robot.
 
-## Hexmove Robot
-
-**Step 1: Install**
-
-Create environment and install ModelServer.
-
-```
-conda create -n modelserver
-conda activate modelserver
-git clone https://github.com/bagh2178/ModelServer.git
-cd ModerServer
-pip install -r requirements.txt
-```
-
-Install pyrealsense2<=2.53 from [here](https://github.com/IntelRealSense/librealsense) and install pyorbbecsdk manually from [here](https://github.com/orbbec/pyorbbecsdk)
-
-**Step 2: Run**
-
-Start ModelServer. When the green "READY" appears, ModelServer has started and is waiting for the API to be called.
-
-```
-python start_hexmove.py
-```
-
-
-
-## Upper Computer
+## On Upper Computer
 
 **Step 1: Install**
 
@@ -111,4 +85,28 @@ arm_move_robot
 arm_move_local
 arm_end_pose_ctrl
 arm_joint_ctrl
+```
+
+## On Hexmove Robot
+
+**Step 1: Install**
+
+Create environment and install ModelServer.
+
+```
+conda create -n modelserver
+conda activate modelserver
+git clone https://github.com/bagh2178/ModelServer.git
+cd ModerServer
+pip install -r requirements.txt
+```
+
+Install pyrealsense2<=2.53 from [here](https://github.com/IntelRealSense/librealsense) and install pyorbbecsdk manually from [here](https://github.com/orbbec/pyorbbecsdk)
+
+**Step 2: Run**
+
+Start ModelServer. When the green "READY" appears, ModelServer has started and is waiting for the API to be called.
+
+```
+python start_hexmove.py
 ```
