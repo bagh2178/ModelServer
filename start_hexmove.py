@@ -1,5 +1,5 @@
 import argparse
-from ModelServer import Hexmove_Server
+from ModelServer.server.hexmove import Hexmove_Server
 
 
 parser = argparse.ArgumentParser()
