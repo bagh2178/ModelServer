@@ -47,7 +47,7 @@ class Hexmove_Client():
         >>> agent('arm_move_camera', 'FemtoBolt_down', 'arm_right', [0.139, 0.067, 0.330])
         'done'
     '''
-    def __init__(self, server_ip='127.0.0.1', server_port=7002):
+    def __init__(self, server_ip='166.111.73.73', server_port=7002):
         self.server_ip = server_ip
         self.server_port = server_port
         self.tcpclient = TCPClient(self.server_ip, self.server_port)

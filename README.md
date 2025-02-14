@@ -11,6 +11,7 @@ Create environment and install ModelServer.
 ```
 conda create -n modelserver
 conda activate modelserver
+git clone https://github.com/bagh2178/ModelServer.git
 cd ModerServer
 pip install -r requirements.txt
 ```
