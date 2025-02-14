@@ -35,7 +35,12 @@ python start_hexmove.py
 Install ModelServer, in your project environment.
 
 ```
-conda activate <your_project_env>
+pip install git+https://github.com/bagh2178/ModelServer.git
+```
+
+or
+
+```
 git clone https://github.com/bagh2178/ModelServer.git
 pip install -e ModelServer/
 ```

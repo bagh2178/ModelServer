@@ -116,6 +116,7 @@ class Hexmove():
         self.tracking_method = 'T265'
         self.move_position_error_threshold = 0.1
         self.move_orientation_error_threshold = 0.3
+        self.robot_pose_reset_done = False
         self.robot_pose_reset()
 
     def __call__(self, commond):
@@ -170,6 +171,7 @@ class Hexmove():
 
     def robot_pose_reset(self, commond=None):
         self.robot_pose_origin, timestamp = self.get_robot_pose_zero()
+        self.robot_pose_reset_done = True
         return 'done'
 
     def get_rgbd_image(self, commond):
@@ -266,6 +268,8 @@ class Hexmove():
         return position_x, position_y, yaw
 
     def get_robot_pose(self, commond=None):
+        if not self.robot_pose_reset_done:
+            self.robot_pose_reset()
         robot_pose, timestamp = self.get_robot_pose_zero()
         robot_pose = np.linalg.inv(self.robot_pose_origin) @ robot_pose
         return robot_pose, timestamp
