@@ -1,6 +1,6 @@
 # ModelServer
 
-ModelServer is a framework for deploying models that isolates the model environment from the project environment and decoups the model code from the project code. Information is transferred between the model code and the project code over tcp. Currently, Hexmove Robot are supported. You can install ModelServer on robot and upper computer, then call api on upper computer to read and control robot.
+ModelServer is a framework for deploying models on a host computer and remotely calling API over the Internet to read and control robots. Hexmove Robot is currently supported.
 
 ## On Upper Computer
 
