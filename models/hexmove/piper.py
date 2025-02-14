@@ -117,7 +117,7 @@ class PiperArm():
 
     def arm_joint_ctrl(self, arm_joint):
         self.enable()
-        for i in range(100):
+        for i in range(10):
             joint_0 = round(arm_joint[0] * self.joint_factor)
             joint_1 = round(arm_joint[1] * self.joint_factor)
             joint_2 = round(arm_joint[2] * self.joint_factor)

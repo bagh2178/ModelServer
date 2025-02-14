@@ -6,10 +6,13 @@ from .receive_data import receive_data
 
 
 class TCPServer:
-    def __init__(self, host, port):
+    def __init__(self, host, port, is_debugging=False):
         self.host = host
         self.port = port
         self.processor = lambda x: x
+        self.is_debugging = is_debugging
+        if not self.is_debugging:
+            self.is_debugging = sys.gettrace() is not None
 
     def set_processor(self, processor):
         self.processor = processor
@@ -35,8 +38,7 @@ class TCPServer:
                 print(f"\033[92mREADY\033[0m")
                 conn, addr = s.accept()
                 with conn:
-                    is_debugging = sys.gettrace() is not None
-                    if is_debugging:
+                    if self.is_debugging:
                         self.recv_and_senf(conn, addr)
                     else:
                         try:

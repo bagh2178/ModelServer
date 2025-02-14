@@ -7,6 +7,7 @@
 **/outputs/
 **/**.npy
 **.egg
+**.egg-info
 models/hexmove/agent_scan.py
 models/hexmove/debug_torch.py
 models/hexmove/global_map.npy

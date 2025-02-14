@@ -202,12 +202,12 @@ class Hexmove():
                 Image.fromarray(rgb_image).save(rgb_byte_io, format='JPEG', quality=90)
             rgb_image = rgb_byte_io
         if 'pose' in commond:
-            if 'without_depth':
+            if 'without_depth' in commond:
                 return rgb_image, pose, timestamp
             else:
                 return rgb_image, depth_image, pose, timestamp
         else:
-            if 'without_depth':
+            if 'without_depth' in commond:
                 return rgb_image, timestamp
             else:
                 return rgb_image, depth_image, timestamp

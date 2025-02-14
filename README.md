@@ -35,27 +35,11 @@ Install ModelServer, in your project environment.
 
 ```
 conda activate <your_project_env>
-cd ModelServer
-pip install -e .
+git clone https://github.com/bagh2178/ModelServer.git
+pip install -e ModelServer/
 ```
 
 **Step 2:** API
-
-You can print to get the usage of the API call.
-
-```
-from ModelServer.client.hexmove import Hexmove_Client
-
-agent = Hexmove_Client()
-print(help(Hexmove_Client))
-```
-
-Now, we support a variety of commond in API, including:
-
-```
-get_robot_pose
-get_rgbd_intrinsic
-```
 
 Code example:
 
@@ -82,4 +66,22 @@ camera_position, camera_orientation, timestamp = agent('get_camera_pose', 'camer
 # get RGB-D
 rgb_image, depth_image, timestamp = agent('get_rgbd_image', 'camera_id')
 rgb_image, depth_image, pose, timestamp = agent('get_rgbd_image', 'camera_id', 'pose')
+rgb_image, timestamp = agent('get_rgbd_image', 'camera_id', 'without_depth')
+rgb_image, pose, timestamp = agent('get_rgbd_image', 'camera_id', 'pose', 'without_depth')
+```
+
+You can print to get the usage of the API call.
+
+```
+from ModelServer import Hexmove_Client
+
+agent = Hexmove_Client()
+print(help(Hexmove_Client))
+```
+
+Now, we support a variety of commond in API, including:
+
+```
+get_robot_pose
+get_rgbd_intrinsic
 ```

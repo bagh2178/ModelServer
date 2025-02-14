@@ -1,10 +1,10 @@
-import os
-import sys
-script_path = os.path.realpath(__file__)
-script_dir = os.path.dirname(script_path)
-parent_dir = os.path.dirname(script_dir)
-sys.path.append(parent_dir)
-from ModelServer.server.hexmove import Hexmove_Server
+import argparse
+from ModelServer import Hexmove_Server
 
 
-hexmove_server = Hexmove_Server()
+parser = argparse.ArgumentParser()
+parser.add_argument('--debug', action='store_true')
+args = parser.parse_args()
+
+
+hexmove_server = Hexmove_Server(is_debugging=args.debug)
