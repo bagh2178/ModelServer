@@ -4,7 +4,7 @@ ModelServer is a framework for deploying models that isolates the model environm
 
 ## Hexmove Robot
 
-**Step 1:** Environment
+**Step 1:** Install
 
 Create environment and install ModelServer.
 
@@ -18,7 +18,7 @@ pip install -r requirements.txt
 
 Install pyrealsense2<=2.53 from [here](https://github.com/IntelRealSense/librealsense) and install pyorbbecsdk manually from [here](https://github.com/orbbec/pyorbbecsdk)
 
-**Step 2:** Start
+**Step 2:** Run
 
 Start ModelServer. When the green "READY" appears, ModelServer has started and is waiting for the API to be called.
 
@@ -30,7 +30,7 @@ python start_hexmove.py
 
 ## Upper Computer
 
-**Step 1:** Environment
+**Step 1:** Install
 
 Install ModelServer, in your project environment.
 
@@ -40,7 +40,7 @@ git clone https://github.com/bagh2178/ModelServer.git
 pip install -e ModelServer/
 ```
 
-**Step 2:** API
+**Step 2:** Run
 
 Code example:
 
@@ -83,6 +83,27 @@ print(help(Hexmove_Client))
 Now, we support a variety of commond in API, including:
 
 ```
+robot_pose_reset
+get_rgbd_image
+get_rgbd_image_rdt
+get_pointcloud
+get_camera_intrinsic
+get_camera_extrinsic
+get_camera_xy_and_yaw
 get_robot_pose
-get_rgbd_intrinsic
+robot_move
+robot_move_openloop
+get_arm_pose
+get_arm_pose_rdt
+arm_reset
+arm_prepare
+arm_open_gripper
+arm_close_gripper
+arm_enable
+arm_disable
+arm_move_camera
+arm_move_robot
+arm_move_local
+arm_end_pose_ctrl
+arm_joint_ctrl
 ```
