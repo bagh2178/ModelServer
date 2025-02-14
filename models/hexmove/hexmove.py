@@ -19,7 +19,7 @@ from .point_cloud_generator import generate_point_cloud
 
 class Hexmove():
     def __init__(self) -> None:
-        self.save_image_dir = '/home/tl/yh/ModelServer/models/hexmove/data/images/{}'
+        self.save_image_dir = '/home/tl/yh/ModelServer/data/hexmove/images/{}'
         self.save_rdt_image_dir = '/home/tl/yh/data/{}/episode_{:0>6}/rgb/{}'
         self.save_rdt_arm_pose_dir = '/home/tl/yh/data/{}/episode_{:0>6}/pose'
         self.supported_commonds = [
@@ -237,8 +237,7 @@ class Hexmove():
             position = pose[:3, 3]
             points[:, :3] = (orientation @ points[:, :3].T).T + position
             output_file_path_world = os.path.join(self.save_image_dir.format(serial_number), 'pc')
-            if not os.path.exists(output_file_path_world):
-                os.makedirs(output_file_path_world)
+            os.makedirs(output_file_path_world, exist_ok=True)
             output_file_path_world = os.path.join(output_file_path_world, f'{timestamp}.txt')
             np.savetxt(output_file_path_world, points, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
             return 'done'
@@ -503,8 +502,7 @@ class Hexmove():
 
     def save_image_rdt(self, rgb_image, position, episode_index, index):
         rgb_image_dir = self.save_rdt_image_dir.format('arm_right', episode_index, position)
-        if not os.path.exists(rgb_image_dir):
-            os.makedirs(rgb_image_dir)
+        os.makedirs(rgb_image_dir, exist_ok=True)
         rgb_image_path = os.path.join(rgb_image_dir, f'{index:0>6}.jpg')
         Image.fromarray(rgb_image).save(rgb_image_path)
 
@@ -521,8 +519,7 @@ class Hexmove():
 
     def save_arm_pose_rdt(self, arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, timestamp=None):
         arm_pose_dir = self.save_rdt_arm_pose_dir.format('arm_right', episode_index)
-        if not os.path.exists(arm_pose_dir):
-            os.makedirs(arm_pose_dir)
+        os.makedirs(arm_pose_dir, exist_ok=True)
         arm_pose_path = os.path.join(arm_pose_dir, f'{index:0>6}.pkl')
         arm_pose = {
             'arm_end_pose': arm_end_pose,
