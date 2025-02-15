@@ -63,7 +63,8 @@ print(help(Hexmove_Client))
 Now, we support a variety of commond in API, including:
 
 ```
-'get_rgbd_image', <camera_id>, <format>='png', <save>='save', <pose>='pose', <without_depth>='without_depth'
+# [] represents optional argument
+'get_rgbd_image', <camera_id>, [<format>=['jpg', 'png']], [<save>=['save']], [<pose>=['pose']], [<without_depth>=['without_depth']]
 'get_pointcloud', <camera_id>
 'get_camera_intrinsic', <camera_id>
 'get_camera_extrinsic', <camera_id>
@@ -83,9 +84,9 @@ Now, we support a variety of commond in API, including:
 'arm_prepare', <arm_id>
 'arm_open_gripper', <arm_id>
 'arm_close_gripper', <arm_id>
-'arm_move_camera', <camera_id>, <arm_id>, <position>, <orientation>=None
-'arm_move_robot', <arm_id>, <position>, <orientation>=None
-'arm_move_local', <arm_id>, <position>, <orientation>=None
+'arm_move_camera', <camera_id>, <arm_id>, <position>, [<orientation>=[None]]
+'arm_move_robot', <arm_id>, <position>, [<orientation>=[None]]
+'arm_move_local', <arm_id>, <position>, [<orientation>=[None]]
 'arm_end_pose_ctrl', <arm_id>, <arm_end_pose>
 'arm_joint_ctrl', <arm_id>, <arm_joint>
 ```
