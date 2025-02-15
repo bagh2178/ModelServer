@@ -4,7 +4,7 @@ ModelServer is a framework for deploying models on a host computer and remotely 
 
 ## On Host Computer
 
-**Step 1: Install**
+#### Install
 
 Install ModelServer, in your project environment.
 
@@ -19,7 +19,7 @@ git clone https://github.com/bagh2178/ModelServer.git
 pip install -e ModelServer/
 ```
 
-**Step 2: Run**
+#### Run
 
 Code example:
 
@@ -34,20 +34,21 @@ agent('move_backward')
 agent('turn_left')
 agent('turn_right')
 
+# get RGB-D
+rgb_image, depth_image, timestamp = agent('get_rgbd_image', 'FemtoBolt_down')
+rgb_image, depth_image, timestamp = agent('get_rgbd_image', 'FemtoBolt_down', 'jpg')
+rgb_image, depth_image, pose, timestamp = agent('get_rgbd_image', 'FemtoBolt_down', 'pose')
+rgb_image, timestamp = agent('get_rgbd_image', 'FemtoBolt_down', 'without_depth')
+rgb_image, pose, timestamp = agent('get_rgbd_image', 'FemtoBolt_down', 'pose', 'without_depth')
+
 # get robot pose
 pose, timestamp = agent('get_robot_pose')
 
 # get camera intrinsic
-color_intrinsics, depth_intrinsics = agent('get_rgbd_intrinsic', 'camera_id')
+color_intrinsics, depth_intrinsics = agent('get_rgbd_intrinsic', 'FemtoBolt_down')
 
 # get camera extrinsic
-camera_position, camera_orientation, timestamp = agent('get_camera_pose', 'camera_id')
-
-# get RGB-D
-rgb_image, depth_image, timestamp = agent('get_rgbd_image', 'camera_id')
-rgb_image, depth_image, pose, timestamp = agent('get_rgbd_image', 'camera_id', 'pose')
-rgb_image, timestamp = agent('get_rgbd_image', 'camera_id', 'without_depth')
-rgb_image, pose, timestamp = agent('get_rgbd_image', 'camera_id', 'pose', 'without_depth')
+camera_position, camera_orientation, timestamp = agent('get_camera_pose', 'FemtoBolt_down')
 ```
 
 You can print to get the usage of the API call.
@@ -62,34 +63,36 @@ print(help(Hexmove_Client))
 Now, we support a variety of commond in API, including:
 
 ```
-robot_pose_reset
-get_rgbd_image
-get_rgbd_image_rdt
-get_pointcloud
-get_camera_intrinsic
-get_camera_extrinsic
-get_camera_xy_and_yaw
-get_robot_pose
-robot_move
-robot_move_openloop
-get_arm_pose
-get_arm_pose_rdt
-arm_reset
-arm_prepare
-arm_open_gripper
-arm_close_gripper
-arm_enable
-arm_disable
-arm_move_camera
-arm_move_robot
-arm_move_local
-arm_end_pose_ctrl
-arm_joint_ctrl
+'get_rgbd_image', <camera_id>, <format>='png', <save>='save', <pose>='pose', <without_depth>='without_depth'
+'get_pointcloud', <camera_id>
+'get_camera_intrinsic', <camera_id>
+'get_camera_extrinsic', <camera_id>
+'get_camera_xy_and_yaw', <camera_id>
+
+'robot_pose_reset'
+'get_robot_pose'
+
+'robot_move', <goal>
+'robot_move_openloop', <goal>
+
+'get_arm_pose', <arm_id>
+
+'arm_enable', <arm_id>
+'arm_disable', <arm_id>
+'arm_reset', <arm_id>
+'arm_prepare', <arm_id>
+'arm_open_gripper', <arm_id>
+'arm_close_gripper', <arm_id>
+'arm_move_camera', <camera_id>, <arm_id>, <position>, <orientation>=None
+'arm_move_robot', <arm_id>, <position>, <orientation>=None
+'arm_move_local', <arm_id>, <position>, <orientation>=None
+'arm_end_pose_ctrl', <arm_id>, <arm_end_pose>
+'arm_joint_ctrl', <arm_id>, <arm_joint>
 ```
 
 ## On Hexmove Robot
 
-**Step 1: Install**
+#### Install
 
 Create environment and install ModelServer.
 
@@ -101,12 +104,18 @@ cd ModerServer
 pip install -r requirements.txt
 ```
 
-Install pyrealsense2<=2.53 from [here](https://github.com/IntelRealSense/librealsense) and install pyorbbecsdk manually from [here](https://github.com/orbbec/pyorbbecsdk)
+Install pyrealsense2<=2.53 (T265 camera does not support version>2.53) from [here](https://github.com/IntelRealSense/librealsense) and install pyorbbecsdk manually from [here](https://github.com/orbbec/pyorbbecsdk)
 
-**Step 2: Run**
+#### Run
 
 Start ModelServer. When the green "READY" appears, ModelServer has started and is waiting for the API to be called.
 
 ```
-python start_hexmove.py
+python start_hexmove.py  # run mode: If an error occurs, the server will not exit and display less detailed error
+```
+
+or
+
+```
+python start_hexmove.py --debug  # debug mode: If an error occurs, the server will exit and display detailed error
 ```
