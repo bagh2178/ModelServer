@@ -1,5 +1,7 @@
+import os
 import sys
-sys.path.append('/mnt/data-1/why/Env/Grounded-SAM-2')
+GSAM2_root_dir = '/mnt/data-1/why/Env/Grounded-SAM-2'
+sys.path.append(GSAM2_root_dir)
 from typing import Tuple
 import numpy as np
 from PIL import Image
@@ -30,13 +32,13 @@ class GSAM2():
     def __init__(self):
         self.sam2_model = build_sam2(
             'configs/sam2.1/sam2.1_hiera_l.yaml', 
-            '/mnt/data-1/why/Env/Grounded-SAM-2/checkpoints/sam2.1_hiera_large.pt', 
+            os.path.join(GSAM2_root_dir, 'checkpoints/sam2.1_hiera_large.pt'), 
             device='cuda'
         )
         self.sam2_predictor = SAM2ImagePredictor(self.sam2_model)
         self.grounding_model = load_model(
-            model_config_path='/mnt/data-1/why/Env/Grounded-SAM-2/grounding_dino/groundingdino/config/GroundingDINO_SwinT_OGC.py',
-            model_checkpoint_path='/mnt/data-1/why/Env/Grounded-SAM-2/gdino_checkpoints/groundingdino_swint_ogc.pth',
+            model_config_path = os.path.join(GSAM2_root_dir, 'grounding_dino/groundingdino/config/GroundingDINO_SwinT_OGC.py'),
+            model_checkpoint_path = os.path.join(GSAM2_root_dir, 'gdino_checkpoints/groundingdino_swint_ogc.pth'),
             device='cuda'
         )
 
