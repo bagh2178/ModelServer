@@ -20,7 +20,7 @@ class TCPClient:
             s.connect((self.host, self.port))
             encoded_data = pickle.dumps(data)
             s.sendall(struct.pack('>I', len(encoded_data)) + encoded_data)
-            data_length = struct.unpack('>I', s.recv(4))[0]
+            data_length = struct.unpack('>I', s.recv(8))[0]
             response_data = receive_data(s, data_length)
             return pickle.loads(response_data)
 
