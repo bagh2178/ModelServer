@@ -19,13 +19,13 @@ class TCPServer:
 
     def recv_and_senf(self, conn, addr):
         print(f"Connected by {addr}")
-        data_length = struct.unpack('>I', conn.recv(8))[0]
+        data_length = struct.unpack('>Q', conn.recv(8))[0]
         data = receive_data(conn, data_length)
         received_data = pickle.loads(data)
         print("Received data:", received_data)
         processed_data = self.processor(received_data)
         encoded_data = pickle.dumps(processed_data)
-        conn.sendall(struct.pack('>I', len(encoded_data)) + encoded_data)
+        conn.sendall(struct.pack('>Q', len(encoded_data)) + encoded_data)
 
     def start(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
