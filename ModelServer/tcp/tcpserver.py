@@ -19,7 +19,7 @@ class TCPServer:
 
     def recv_and_senf(self, conn, addr):
         print(f"Connected by {addr}")
-        data_length = struct.unpack('>I', conn.recv(4))[0]
+        data_length = struct.unpack('>I', conn.recv(8))[0]
         data = receive_data(conn, data_length)
         received_data = pickle.loads(data)
         print("Received data:", received_data)
