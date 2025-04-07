@@ -20,3 +20,10 @@ ModelServer/models/debug_arm.py
 ModelServer/models/Grounded_Segment_Anything/
 ModelServer/models/Grounded-SAM-2/
 ModelServer/models/GroundingDINO/
+ModelServer/models/hexmove/agent_scan_ESAM.py
+ModelServer/models/hexmove/debug_torch_ESAM.py
+ModelServer/models/anygrasp_sdk
+ModelServer/models/.TimeRecord
+ModelServer/models/0.txt
+ModelServer/models/debug_anygrasp.py
+ModelServer/models/debug_torch_esam.py

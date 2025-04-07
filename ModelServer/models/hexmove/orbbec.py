@@ -49,6 +49,22 @@ class OrbbecCamera():
         for _ in range(50):
             self.pipeline.wait_for_frames(100)
 
+    def capture_rgb_image(self, zoom_factor=1.0):
+        try:
+            frames = self.pipeline.wait_for_frames(100)
+            color_frame = frames.get_color_frame()
+            timestamp = color_frame.get_system_timestamp_us()
+            timestamp = 1e-6 * timestamp
+
+            width = color_frame.get_width()
+            height = color_frame.get_height()
+            color_image = np.asanyarray(color_frame.get_data())
+            color_image = np.resize(color_image, (height, width, 3))
+
+            return color_image, timestamp
+        except:
+            self.pipeline.stop()
+
     def capture_rgbd_image(self, zoom_factor=1.0):
         try:
             frames = self.pipeline.wait_for_frames(100)

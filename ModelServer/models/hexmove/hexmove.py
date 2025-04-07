@@ -25,7 +25,7 @@ class Hexmove():
         self.supported_commonds = [
             'robot_pose_reset',
             'get_rgbd_image',
-            'get_rgbd_image_rdt',
+            'get_rgb_image_rdt',
             'get_pointcloud',
             'get_camera_intrinsic',
             'get_camera_extrinsic',
@@ -83,7 +83,7 @@ class Hexmove():
                                                [-1, 0, 0, 0],
                                                [0, -1, 0, 0.88],
                                                [0, 0, 0, 1]]),
-                'rotation': R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix()
+                # 'rotation': R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix()
             },
             '336L_down': {
                 'serial_number': 'CP828410001R',
@@ -186,8 +186,11 @@ class Hexmove():
         self.init_device(camera_id)
         camera_param = None
         pose = None
+        pose_type = 'extrinsic'
+        if 'xy_and_yaw' in commond:
+            pose_type = 'xy_and_yaw'
         if 'pose' in commond:
-            pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5)
+            pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5, pose_type=pose_type)
             rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
             closest_index = timestamp_match(timestamp_list, timestamp)
             pose = pose_list[closest_index]
@@ -214,17 +217,35 @@ class Hexmove():
             else:
                 return rgb_image, depth_image, timestamp
 
-    def get_rgbd_image_rdt(self, commond):
+    def get_rgb_image_rdt(self, commond):
         camera_id = commond[1]
-        episode_index = commond[2]
-        index = commond[3]
-        position = commond[4]
-        serial_number = self.device_list[camera_id]['serial_number']
+        if 'save' in commond:
+            episode_index = commond[2]
+            index = commond[3]
+            position = commond[4]
+        if 'png' in commond or 'PNG' in commond:
+            format = 'PNG'
+        elif 'jpg' in commond or 'jpeg' in commond or 'JPG' in commond or 'JPEG' in commond:
+            format = 'JPEG'
+        else:
+            format = 'array'
+
         self.init_device(camera_id)
-        rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
+        rgb_image, timestamp = self.device_list[camera_id]['device'].capture_rgb_image()
+
+        if format in ['PNG', 'JPEG']:
+            rgb_byte_io = io.BytesIO()
+            if format == 'PNG':
+                Image.fromarray(rgb_image).save(rgb_byte_io, format='PNG', optimize=True)
+            elif format == 'JPEG':
+                Image.fromarray(rgb_image).save(rgb_byte_io, format='JPEG', quality=90)
+            rgb_image = rgb_byte_io
+
         if 'save' in commond:
             self.save_image_rdt(rgb_image, position, episode_index, index)
-        return timestamp
+            return timestamp
+        else:
+            return rgb_image, timestamp
 
     def get_pointcloud(self, commond):
         camera_id = commond[1]
@@ -242,7 +263,7 @@ class Hexmove():
             os.makedirs(output_file_path_world, exist_ok=True)
             output_file_path_world = os.path.join(output_file_path_world, f'{timestamp}.txt')
             np.savetxt(output_file_path_world, points, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
-            return 'done'
+            return points
         else:
             'Device cannot support get_pointcloud.'
 
@@ -254,17 +275,20 @@ class Hexmove():
 
     def get_camera_extrinsic(self, commond):
         camera_id = commond[1]
-        camera_position, camera_orientation, timestamp = self.get_camera_pose(camera_id)
-        return camera_position, camera_orientation, timestamp
+        camera_pose, timestamp = self.get_camera_pose(camera_id, pose_type='extrinsic')
+        camera_extrinsic = camera_pose
+        return camera_extrinsic, timestamp
 
     def get_camera_xy_and_yaw(self, commond):
         camera_id = commond[1]
-        robot_pose, timestamp = self.get_robot_pose()
-        camera_pose = robot_pose @ self.device_list[camera_id]['T_robot_to_camera']
-        camera_position = camera_pose[:3, 3]
-        position_x, position_y = camera_position[0], camera_position[1]
-        orientation = robot_pose[:3, :3]
-        roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
+        # robot_pose, timestamp = self.get_robot_pose()
+        # camera_pose = robot_pose @ self.device_list[camera_id]['T_robot_to_camera']
+        # camera_position = camera_pose[:3, 3]
+        # position_x, position_y = camera_position[0], camera_position[1]
+        # orientation = robot_pose[:3, :3]
+        # roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
+        camera_pose, timestamp = self.get_camera_pose(camera_id, pose_type='xy_and_yaw')
+        position_x, position_y, yaw = camera_pose
         return position_x, position_y, yaw
 
     def get_robot_pose(self, commond=None):
@@ -541,19 +565,26 @@ class Hexmove():
         roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
         return position_x, position_y, yaw
     
-    def get_camera_pose(self, camera_id):
+    def get_camera_pose(self, camera_id, pose_type='extrinsic'):
         robot_pose, timestamp = self.get_robot_pose()
         camera_pose = robot_pose @ self.device_list[camera_id]['T_robot_to_camera']
-        return camera_pose, timestamp
+        if pose_type == 'extrinsic':
+            return camera_pose, timestamp
+        if pose_type == 'xy_and_yaw':
+            camera_position = camera_pose[:3, 3]
+            position_x, position_y = camera_position[0], camera_position[1]
+            orientation = robot_pose[:3, :3]
+            roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
+            return (position_x, position_y, yaw), timestamp
     
-    def record_camera_pose(self, camera_id, record_time=1.0):
+    def record_camera_pose(self, camera_id, record_time=1.0, pose_type='extrinsic'):
         pose_list = []
         timestamp_list = []
         self.init_device(self.tracking_method)
         tracking_fps = self.device_list[self.tracking_method]['device'].get_fps()
         num_record_frame = int(tracking_fps * record_time)
         for i in range(num_record_frame):
-            camera_pose, timestamp = self.get_camera_pose(camera_id)
+            camera_pose, timestamp = self.get_camera_pose(camera_id, pose_type)
             pose_list.append(camera_pose)
             timestamp_list.append(timestamp)
         return pose_list, timestamp_list
