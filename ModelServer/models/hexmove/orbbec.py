@@ -2,6 +2,7 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 import pyorbbecsdk as ob
+from pyorbbecsdk import *
 
 
 class OrbbecCamera():
@@ -36,8 +37,8 @@ class OrbbecCamera():
             self.device.set_int_property(ob.OBPropertyID(2002), 0)  # OBPropertyID.OB_PROP_COLOR_GAIN_INT
             self.device.set_bool_property(ob.OBPropertyID(2003), False)  # OB_PROP_COLOR_AUTO_WHITE_BALANCE_BOOL
             self.device.set_int_property(ob.OBPropertyID(2004), 4000)  # OB_PROP_COLOR_WHITE_BALANCE_INT
-            depth_profile = depth_profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.Y16, 30)
-            color_profile = color_profile_list.get_video_stream_profile(1280, 720, ob.OBFormat.RGB, 30)
+            depth_profile = depth_profile_list.get_video_stream_profile(640, 480, ob.OBFormat.Y16, 15)
+            color_profile = color_profile_list.get_video_stream_profile(640, 480, ob.OBFormat.RGB, 15)
             self.depth_scale = 0.001
         config.enable_stream(depth_profile)
         config.enable_stream(color_profile)
@@ -49,10 +50,36 @@ class OrbbecCamera():
         for _ in range(50):
             self.pipeline.wait_for_frames(100)
 
+    # def capture_rgb_image(self, zoom_factor=1.0):
+    #     try:
+    #         frames = self.pipeline.wait_for_frames(100)
+    #         color_frame = frames.get_color_frame()
+    #         timestamp = color_frame.get_system_timestamp_us()
+    #         timestamp = 1e-6 * timestamp
+    #
+    #         width = color_frame.get_width()
+    #         height = color_frame.get_height()
+    #         color_image = np.asanyarray(color_frame.get_data())
+    #         color_image = np.resize(color_image, (height, width, 3))
+    #
+    #         return color_image, timestamp
+    #     except:
+    #         self.pipeline.stop()
+
     def capture_rgb_image(self, zoom_factor=1.0):
-        try:
-            frames = self.pipeline.wait_for_frames(100)
+        color_image, timestamp = None, None
+        while True:
+            frames = self.pipeline.wait_for_frames(200)
+            # frames: FrameSet = self.pipeline.wait_for_frames(100)
+            if frames is None:
+                print("frames is None")
+                continue
+            # if frames is None:
+            #     continue
             color_frame = frames.get_color_frame()
+            if color_frame is None:
+                print("color_frame is None")
+                continue
             timestamp = color_frame.get_system_timestamp_us()
             timestamp = 1e-6 * timestamp
 
@@ -61,15 +88,48 @@ class OrbbecCamera():
             color_image = np.asanyarray(color_frame.get_data())
             color_image = np.resize(color_image, (height, width, 3))
 
-            return color_image, timestamp
-        except:
-            self.pipeline.stop()
+            if color_image is not None:
+                break
+        return color_image, timestamp
+
+    # def capture_rgbd_image(self, zoom_factor=1.0):
+    #     try:
+    #         frames = self.pipeline.wait_for_frames(100)
+    #         color_frame = frames.get_color_frame()
+    #         depth_frame = frames.get_depth_frame()
+    #         timestamp = 0.5 * (color_frame.get_system_timestamp_us() + depth_frame.get_system_timestamp_us())
+    #         timestamp = 1e-6 * timestamp
+    #
+    #         width = color_frame.get_width()
+    #         height = color_frame.get_height()
+    #         color_image = np.asanyarray(color_frame.get_data())
+    #         color_image = np.resize(color_image, (height, width, 3))
+    #
+    #         width = depth_frame.get_width()
+    #         height = depth_frame.get_height()
+    #         depth_image = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
+    #         depth_image = depth_image.reshape((height, width))
+    #
+    #         return color_image, depth_image, timestamp
+    #     except:
+    #         self.pipeline.stop()
 
     def capture_rgbd_image(self, zoom_factor=1.0):
-        try:
-            frames = self.pipeline.wait_for_frames(100)
+        color_image, timestamp = None, None
+        depth_image = None
+        while True:
+            frames = self.pipeline.wait_for_frames(200)
+            if frames is None:
+                print("frames is None")
+                continue
             color_frame = frames.get_color_frame()
+            if color_frame is None:
+                print("rgb frame is None")
+                continue
             depth_frame = frames.get_depth_frame()
+            if depth_frame is None:
+                print("depth frame is None")
+                continue
             timestamp = 0.5 * (color_frame.get_system_timestamp_us() + depth_frame.get_system_timestamp_us())
             timestamp = 1e-6 * timestamp
 
@@ -83,9 +143,10 @@ class OrbbecCamera():
             depth_image = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
             depth_image = depth_image.reshape((height, width))
 
-            return color_image, depth_image, timestamp
-        except:
-            self.pipeline.stop()
+            if depth_image is not None and color_image is not None:
+                break
+
+        return color_image, depth_image, timestamp
 
     def capture_point_cloud(self):
         try:

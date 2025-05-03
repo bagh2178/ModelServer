@@ -90,7 +90,7 @@ class PiperArm():
         arm_gripper_pose = arm_gripper_pose.gripper_state.grippers_angle / self.gripper_pose_factor
         arm_pose = np.append(arm_end_pose, arm_joint)
         arm_pose = np.append(arm_pose, arm_gripper_pose)
-        return arm_end_pose, arm_joint, arm_gripper_pose, timestamp
+        return arm_end_pose, arm_joint, np.asarray([arm_gripper_pose]), timestamp
     
     def arm_gripper_ctrl(self, arm_gripper_pose):
         self.enable()
@@ -125,7 +125,7 @@ class PiperArm():
             joint_4 = round(arm_joint[4] * self.joint_factor)
             joint_5 = round(arm_joint[5] * self.joint_factor)
             joint_6 = round(arm_joint[6] * self.gripper_pose_factor)
-            self.piper.MotionCtrl_2(0x01, 0x01, 2, 0x00)
+            self.piper.MotionCtrl_2(0x01, 0x01, 20, 0x00)
             self.piper.JointCtrl(joint_0, joint_1, joint_2, joint_3, joint_4, joint_5)
             self.piper.GripperCtrl(abs(joint_6), 5000, 0x01, 0)
             time.sleep(0.01)

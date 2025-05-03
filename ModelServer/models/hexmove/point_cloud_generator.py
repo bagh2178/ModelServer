@@ -48,3 +48,34 @@ def generate_point_cloud(depth_image, rgb_image, fx, fy, cx, cy, depth_scale, ro
     point_cloud_world.colors = o3d.utility.Vector3dVector(colors)
 
     return point_cloud_world, points_world, colors
+
+def generate_point_cloud_camera(depth_image, rgb_image, fx, fy, cx, cy, depth_scale):
+    # generate_point_cloud without translating to world coordinate
+     # 确保深度图数据类型为float32
+    if depth_image.dtype != np.float32:
+        depth_image = depth_image.astype(np.float32)
+
+    # 将深度图从毫米转换为米
+    depth_image *= depth_scale
+
+    # 创建网格坐标
+    u, v = np.meshgrid(np.arange(depth_image.shape[1]), np.arange(depth_image.shape[0]))
+    z = depth_image
+
+    # 忽略无效深度值
+    valid_mask = (z > 0) & (z <= 15)
+    u = u[valid_mask]
+    v = v[valid_mask]
+    z = z[valid_mask]
+
+    # 计算XYZ坐标
+    x = (u - cx) * z / fx
+    y = (v - cy) * z / fy
+    points = np.vstack((x, y, z)).T
+
+    # 获取对应的颜色
+    colors = rgb_image[v, u] / 255.0  # 归一化颜色值
+
+    # point与color拼成点云，不用o3d
+    point_cloud_camera = np.hstack((points, colors))
+    return point_cloud_camera

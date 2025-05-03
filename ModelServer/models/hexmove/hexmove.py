@@ -26,6 +26,7 @@ class Hexmove():
             'robot_pose_reset',
             'get_rgbd_image',
             'get_rgb_image_rdt',
+            'get_rgbd_image_rdt',
             'get_pointcloud',
             'get_camera_intrinsic',
             'get_camera_extrinsic',
@@ -35,6 +36,7 @@ class Hexmove():
             'robot_move_openloop',
             'get_arm_pose',
             'get_arm_pose_rdt',
+            "get_arm_pose_idp3",
             'arm_reset',
             'arm_prepare',
             'arm_open_gripper',
@@ -46,6 +48,7 @@ class Hexmove():
             'arm_move_local',
             'arm_end_pose_ctrl',
             'arm_joint_ctrl',
+            'get_dual_arm_idp3'
         ]
         self.device_list = {
             'D435i_top': {
@@ -85,8 +88,29 @@ class Hexmove():
                                                [0, 0, 0, 1]]),
                 # 'rotation': R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix()
             },
-            '336L_down': {
-                'serial_number': 'CP828410001R',
+            # '336L_down': {
+            #     'serial_number': 'CP828410001R',
+            #     'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
+            #                                    [-1, 0, 0, 0],
+            #                                    [0, -1, 0, 1.0],
+            #                                    [0, 0, 0, 1]]),
+            # },
+            '336L_head': {
+                'serial_number': 'CP82841000DE',
+                'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
+                                               [-1, 0, 0, 0],
+                                               [0, -1, 0, 0.88],
+                                               [0, 0, 0, 1]]),
+            },
+            "336L_arm_right": {
+                "serial_number": "CP828410001R",
+                'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
+                                               [-1, 0, 0, 0],
+                                               [0, -1, 0, 1.0],
+                                               [0, 0, 0, 1]]),
+            },
+            "336L_arm_left": {
+                "serial_number": "CP84B410000V",
                 'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
                                                [-1, 0, 0, 0],
                                                [0, -1, 0, 1.0],
@@ -119,6 +143,14 @@ class Hexmove():
         self.robot_pose_reset_done = False
         self.robot_pose_reset()
 
+        # self.init_device("FemtoBolt_down")
+        self.init_device("FemtoBolt_up")
+        # self.init_device("336L_head")
+
+        # self.init_device("336L_arm_right")
+        # self.init_device("336L_arm_left")
+        
+        
     def __call__(self, commond):
         action = commond[0]
         if action == 'move_forward':
@@ -229,8 +261,11 @@ class Hexmove():
             format = 'JPEG'
         else:
             format = 'array'
+        save_dir = None
+        if len(commond) >= 7:
+            save_dir = commond[6]
 
-        self.init_device(camera_id)
+        # self.init_device(camera_id)
         rgb_image, timestamp = self.device_list[camera_id]['device'].capture_rgb_image()
 
         if format in ['PNG', 'JPEG']:
@@ -242,10 +277,162 @@ class Hexmove():
             rgb_image = rgb_byte_io
 
         if 'save' in commond:
-            self.save_image_rdt(rgb_image, position, episode_index, index)
+            self.save_image_rdt(rgb_image, position, episode_index, index, save_dir=save_dir)
             return timestamp
         else:
             return rgb_image, timestamp
+
+    def get_rgbd_image_rdt(self, commond):
+        camera_id = commond[1]
+        if 'save' in commond:
+            episode_index = commond[2]
+            index = commond[3]
+            position = commond[4]
+        if 'png' in commond or 'PNG' in commond:
+            format = 'PNG'
+        elif 'jpg' in commond or 'jpeg' in commond or 'JPG' in commond or 'JPEG' in commond:
+            format = 'JPEG'
+        else:
+            format = 'array'
+        save_dir = None
+        if len(commond) >= 7:
+            save_dir = commond[6]
+
+        # self.init_device(camera_id)
+        rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
+        camera_param = self.device_list[camera_id]['device'].capture_camera_param()
+        
+        # Get camera extrinsic parameters
+        # pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5, pose_type='extrinsic')
+        # closest_index = timestamp_match(timestamp_list, timestamp)
+        # pose = pose_list[closest_index]
+        
+        start_time = time.time()
+        # Direct point cloud calculation from RGB and depth images
+        # Extract camera intrinsics
+        fx = camera_param.rgb_intrinsic.fx
+        fy = camera_param.rgb_intrinsic.fy
+        cx = camera_param.rgb_intrinsic.cx
+        cy = camera_param.rgb_intrinsic.cy
+        depth_scale = 0.001  # Convert from millimeters to meters
+        
+        # Create a grid of pixel coordinates
+        height, width = depth_image.shape
+        u, v = np.meshgrid(np.arange(width), np.arange(height))
+        
+        # Convert depth image to meters
+        z = depth_image.astype(np.float32) * depth_scale
+        
+        # Filter out invalid depth values
+        valid_mask = (z > 0) & (z < 10)  # Only keep points within reasonable distance
+        u_valid = u[valid_mask]
+        v_valid = v[valid_mask]
+        z_valid = z[valid_mask]
+        
+        # Calculate 3D coordinates
+        x = (u_valid - cx) * z_valid / fx
+        y = (v_valid - cy) * z_valid / fy
+        
+        # Get RGB values for valid points
+        colors = rgb_image[v_valid, u_valid]
+        
+        # Combine points and colors
+        points = np.column_stack((x, y, z_valid))
+        point_cloud = np.hstack((points, colors))
+        
+        end_time = time.time()
+        print(f"Generation time: {end_time - start_time} seconds")
+
+        start_time = time.time()
+        # Grid sampling for point cloud
+        def grid_sample_pcd(point_cloud, grid_size=0.005):
+            """
+            A simple grid sampling function for point clouds.
+
+            Parameters:
+            - point_cloud: A NumPy array of shape (N, 3) or (N, 6), where N is the number of points.
+                        The first 3 columns represent the coordinates (x, y, z).
+                        The next 3 columns (if present) can represent additional attributes like color or normals.
+            - grid_size: Size of the grid for sampling.
+
+            Returns:
+            - A NumPy array of sampled points with the same shape as the input but with fewer rows.
+            """
+            coords = point_cloud[:, :3]  # Extract coordinates
+            scaled_coords = coords / grid_size
+            grid_coords = np.floor(scaled_coords).astype(int)
+            
+            # Create unique grid keys
+            keys = grid_coords[:, 0] + grid_coords[:, 1] * 10000 + grid_coords[:, 2] * 100000000
+            
+            # Select unique points based on grid keys
+            _, indices = np.unique(keys, return_index=True)
+            
+            # Return sampled points
+            return point_cloud[indices]
+            
+        # Apply grid sampling instead of random sampling
+        if point_cloud.shape[0] > 4096:
+            point_cloud = grid_sample_pcd(point_cloud, grid_size=0.01)  # Adjust grid_size as needed
+            print(f"sampled point cloud shape: {point_cloud.shape}")
+            # If still too many points after grid sampling, subsample further
+            if point_cloud.shape[0] > 4096:
+                point_cloud = point_cloud[np.random.choice(point_cloud.shape[0], 4096, replace=False), :]
+        
+        # print cloud shape
+        print(f"Point cloud shape after doublesampling: {point_cloud.shape}")
+        end_time = time.time()
+        print(f"Sampling time: {end_time - start_time} seconds")
+        
+        if format in ['PNG', 'JPEG']:
+            rgb_byte_io = io.BytesIO()
+            if format == 'PNG':
+                Image.fromarray(rgb_image).save(rgb_byte_io, format='PNG', optimize=True)
+            elif format == 'JPEG':
+                Image.fromarray(rgb_image).save(rgb_byte_io, format='JPEG', quality=90)
+            rgb_image_formatted = rgb_byte_io
+        else:
+            rgb_image_formatted = rgb_image
+
+        if 'save' in commond:
+            start_time = time.time()
+            
+            # Create directory structure with ext folder
+            if save_dir is None:
+                base_dir = os.path.dirname(os.path.dirname(self.save_rdt_image_dir.format('arm_right', episode_index, position)))
+                ext_dir = os.path.join(base_dir, 'ext')
+                pc_dir = os.path.join(base_dir, 'pointcloud')
+                depth_dir = os.path.join(base_dir, 'depth')
+            else:
+                base_dir = os.path.dirname(os.path.dirname(self.save_rdt_image_dir.format(save_dir, episode_index, position)))
+                ext_dir = os.path.join(base_dir, 'ext')
+                pc_dir = os.path.join(base_dir, 'pointcloud')
+                depth_dir = os.path.join(base_dir, 'depth')
+            
+            # Create directories
+            os.makedirs(ext_dir, exist_ok=True)
+            os.makedirs(pc_dir, exist_ok=True)
+            os.makedirs(depth_dir, exist_ok=True)
+            
+            # Save RGB image with sequential naming
+            rgb_image_path = os.path.join(ext_dir, f'{index:0>6}.jpg')
+            Image.fromarray(rgb_image).save(rgb_image_path)
+            print(f"RGB image saved at {rgb_image_path}")
+            
+            # Save depth image with sequential naming
+            depth_image_path = os.path.join(depth_dir, f'{index:0>6}.png')
+            Image.fromarray(depth_image, mode='I;16').save(depth_image_path)
+            print(f"Depth image saved at {depth_image_path}")
+            
+            # Save point cloud with sequential naming
+            pc_path = os.path.join(pc_dir, f'{index:0>6}.txt')
+            np.savetxt(pc_path, point_cloud, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
+            end_time = time.time()
+            print(f"Point cloud saved at {pc_path} in {end_time - start_time:.2f} seconds.")
+            
+            return timestamp
+        else:
+            return rgb_image_formatted, point_cloud, timestamp
 
     def get_pointcloud(self, commond):
         camera_id = commond[1]
@@ -322,6 +509,25 @@ class Hexmove():
             self.save_arm_pose_rdt(arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, timestamp)
         return arm_end_pose, arm_joint, arm_gripper_pose, timestamp
 
+    def get_arm_pose_idp3(self, commond):
+        arm_id = commond[1]
+        episode_index = commond[2]
+        index = commond[3]
+        save_dir = None
+        if len(commond) >= 5:
+            save_dir = commond[5]
+        self.init_device(arm_id)
+        self.init_device("arm_left")
+        right_arm_end_pose, right_arm_joint, right_arm_gripper_pose, right_timestamp = self.device_list[arm_id]['device'].get_arm_pose()
+        left_arm_end_pose, left_arm_joint, left_arm_gripper_pose, left_timestamp = self.device_list["arm_left"]['device'].get_arm_pose()
+        arm_end_pose = np.concatenate((left_arm_end_pose, right_arm_end_pose), axis=0)
+        arm_joint = np.concatenate((left_arm_joint, right_arm_joint), axis=0)
+        arm_gripper_pose = np.concatenate((left_arm_gripper_pose, right_arm_gripper_pose), axis=0)
+
+        if 'save' in commond:
+            self.save_arm_pose_idp3(arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, left_timestamp, save_dir=save_dir)
+        return arm_end_pose, arm_joint, arm_gripper_pose, left_timestamp
+
     def arm_reset(self, commond):
         arm_id = commond[1]
         self.init_device(arm_id)
@@ -344,7 +550,7 @@ class Hexmove():
     def arm_close_gripper(self, commond):
         arm_id = commond[1]
         self.init_device(arm_id)
-        arm_gripper_pose = 0
+        arm_gripper_pose = 0.42
         self.device_list[arm_id]['device'].arm_gripper_ctrl(arm_gripper_pose)
         return 'done'
     
@@ -393,17 +599,18 @@ class Hexmove():
     def arm_move_local(self, commond):
         arm_id = commond[1]
         self.init_device(arm_id)
-        pose = commond[2]
+        position = commond[2]
         if len(commond) >= 5:
             orientation = commond[3]
         else:
             orientation = None
         # orientation = pose[:3, :3]
-        position = pose[:3, 3] * 1000
+        # position = pose[:3, 3] * 1000
+        # position = pose * 1000
         if orientation is None:
-            arm_pose = [position[0], position[1], position[2] + 100, 0, 120, 0, 60]
+            arm_pose = [position[0], position[1], position[2], 0, 120, 0, 60]
         else:
-            arm_pose = [position[0], position[1], position[2] + 100, orientation[0], orientation[1], orientation[2], orientation[3]]
+            arm_pose = [position[0], position[1], position[2], orientation[0], orientation[1], orientation[2], orientation[3]]
         self.device_list[arm_id]['device'].arm_end_pose_ctrl(arm_pose)
         return 'done'
 
@@ -463,7 +670,7 @@ class Hexmove():
         roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
         path_length = np.linalg.norm(position)
         
-        if path_length < 1:
+        if path_length < 0.2:
             self.robot_move_translation(position)
             # self.robot_move_rotation(yaw)
         else:
@@ -485,18 +692,18 @@ class Hexmove():
         x, y = position
         x = x / 1.0 * 1.0
         y = y / 1.0 * 1.0
-        speed = 0.001
+        speed = 0.0035
         distance = np.linalg.norm(position)
         t = int(distance / speed)
-        speed_x = 0.1 * x / distance
-        speed_y = 0.1 * y / distance
+        speed_x = 100 * speed * x / distance
+        speed_y = 100 * speed * y / distance
         if t > 0:
             os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: ' + str(speed_x) + ', y: ' + str(speed_y) + ', z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" -r 100 -t ' + str(t))
         return 'done'
 
     def robot_move_rotation(self, yaw):
         yaw = yaw / np.pi * 180
-        t = abs(int(yaw / 90 * 800))
+        t = abs(int(yaw / 90 * 1000))
         if t > 0:
             if yaw > 0:
                 os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.2}}" -r 100 -t ' + str(t))
@@ -528,8 +735,11 @@ class Hexmove():
             pose_path = os.path.join(self.save_image_dir.format(serial_number), 'extrinsic', f'{timestamp}.txt')
             np.savetxt(pose_path, pose)
 
-    def save_image_rdt(self, rgb_image, position, episode_index, index):
-        rgb_image_dir = self.save_rdt_image_dir.format('arm_right', episode_index, position)
+    def save_image_rdt(self, rgb_image, position, episode_index, index, save_dir=None):
+        if save_dir is None:
+            rgb_image_dir = self.save_rdt_image_dir.format('arm_right', episode_index, position)
+        else:
+            rgb_image_dir = self.save_rdt_image_dir.format(save_dir, episode_index, position)
         os.makedirs(rgb_image_dir, exist_ok=True)
         rgb_image_path = os.path.join(rgb_image_dir, f'{index:0>6}.jpg')
         Image.fromarray(rgb_image).save(rgb_image_path)
@@ -545,8 +755,23 @@ class Hexmove():
         }
         pickle.dump(arm_pose, open(arm_pose_path, 'wb'))
 
-    def save_arm_pose_rdt(self, arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, timestamp=None):
+    def save_arm_pose_rdt(self, arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, timestamp=None, save_dir=None):
         arm_pose_dir = self.save_rdt_arm_pose_dir.format('arm_right', episode_index)
+        os.makedirs(arm_pose_dir, exist_ok=True)
+        arm_pose_path = os.path.join(arm_pose_dir, f'{index:0>6}.pkl')
+        arm_pose = {
+            'arm_end_pose': arm_end_pose,
+            'arm_joint': arm_joint,
+            'arm_gripper_pose': arm_gripper_pose,
+            'timestamp': timestamp,
+        }
+        pickle.dump(arm_pose, open(arm_pose_path, 'wb'))
+
+    def save_arm_pose_idp3(self, arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, timestamp=None, save_dir=None):
+        if save_dir is None:
+            arm_pose_dir = self.save_rdt_arm_pose_dir.format("arm_right", episode_index)
+        else:
+            arm_pose_dir = self.save_rdt_arm_pose_dir.format(save_dir, episode_index)
         os.makedirs(arm_pose_dir, exist_ok=True)
         arm_pose_path = os.path.join(arm_pose_dir, f'{index:0>6}.pkl')
         arm_pose = {
@@ -589,4 +814,13 @@ class Hexmove():
             timestamp_list.append(timestamp)
         return pose_list, timestamp_list
     
-    
+    def get_dual_arm_idp3(self, commond):
+        arm_id = commond[1]
+        self.init_device(arm_id)
+        self.init_device("arm_left")
+        right_arm_end_pose, right_arm_joint, right_arm_gripper_pose, right_timestamp = self.device_list[arm_id]['device'].get_arm_pose()
+        left_arm_end_pose, left_arm_joint, left_arm_gripper_pose, left_timestamp = self.device_list["arm_left"]['device'].get_arm_pose()
+        arm_end_pose = np.concatenate((left_arm_end_pose, right_arm_end_pose), axis=0)
+        arm_joint = np.concatenate((left_arm_joint, right_arm_joint), axis=0)
+        arm_gripper_pose = np.concatenate((left_arm_gripper_pose, right_arm_gripper_pose), axis=0)
+        return arm_end_pose, arm_joint, arm_gripper_pose, left_timestamp
