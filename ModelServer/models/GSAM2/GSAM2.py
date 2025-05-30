@@ -1,6 +1,6 @@
 import os
 import sys
-GSAM2_root_dir = '/mnt/data-1/why/Env/Grounded-SAM-2'
+GSAM2_root_dir = '/mnt/data-1/users/yh/sgvln/Grounded-SAM-2/'
 sys.path.append(GSAM2_root_dir)
 from typing import Tuple
 import numpy as np
