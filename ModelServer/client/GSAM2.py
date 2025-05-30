@@ -2,7 +2,7 @@ from ..tcp import TCPClient
 
 
 class GSAM2_Client():
-    def __init__(self, server_ip='127.0.0.1', server_port=7003):
+    def __init__(self, server_ip='127.0.0.1', server_port=7102):
         self.server_ip = server_ip
         self.server_port = server_port
         self.tcpclient = TCPClient(self.server_ip, self.server_port)
