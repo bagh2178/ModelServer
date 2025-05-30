@@ -15,9 +15,7 @@ episode_index = args.episode_index
 index = 0
 agent = Hexmove_Client()
 while True:
-
     # agent('get_rgb_image_rdt', '336L_arm_right', episode_index, index, 'right_wrist', 'save', "idp3_0414")
-
     # agent('get_rgb_image_rdt', '336L_arm_left', episode_index, index, 'left_wrist', 'save', "idp3_0414")
     # agent('get_rgb_image_rdt', 'FemtoBolt_down', episode_index, index, 'ext', 'save', "idp3_0414")
     agent('get_rgbd_image_rdt', 'FemtoBolt_up', episode_index, index, 'ext', 'save', dataset_id)
@@ -25,5 +23,6 @@ while True:
     # agent('get_rgbd_image_rdt', '336L_head', episode_index, index, 'ext', 'save', "idp3_0414")
 
     arm_pose = agent('get_arm_pose_idp3', 'arm_right', episode_index, index, 'save', dataset_id)
-    print(arm_pose)
+    # print(arm_pose)
+    # time.sleep(2)
     index += 1

@@ -76,9 +76,9 @@ class Hexmove():
                 'serial_number': 'CL8M841005A',
                 'T_robot_to_camera': np.array([[0, 0, 1, 0.33],
                                                [-1, 0, 0, 0],
-                                               [0, -1, 0, 1.3],
+                                               [0, -1, 0, 1.42],
                                                [0, 0, 0, 1]]),
-                'rotation': R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix()
+                'rotation': R.from_euler('xyz', (-np.pi / 180 * 50, 0, 0)).as_matrix()
             },
             'FemtoBolt_down': {
                 'serial_number': 'CL8M841006W',
@@ -86,7 +86,7 @@ class Hexmove():
                                                [-1, 0, 0, 0],
                                                [0, -1, 0, 0.88],
                                                [0, 0, 0, 1]]),
-                # 'rotation': R.from_euler('xyz', (-np.pi / 6, 0, 0)).as_matrix()
+                'rotation': R.from_euler('xyz', (-np.pi / 180 * 27, 0, 0)).as_matrix()
             },
             # '336L_down': {
             #     'serial_number': 'CP828410001R',
@@ -137,6 +137,7 @@ class Hexmove():
                 rotation[:3, :3] = self.device_list[device_id]['rotation']
                 self.device_list[device_id]['T_robot_to_camera'] = self.device_list[device_id]['T_robot_to_camera'] @ rotation
         self.tracking_method = 'odom'
+        self.tracking_method = 'MASt3R-SLAM'
         self.tracking_method = 'T265'
         self.move_position_error_threshold = 0.1
         self.move_orientation_error_threshold = 0.3
@@ -303,9 +304,9 @@ class Hexmove():
         camera_param = self.device_list[camera_id]['device'].capture_camera_param()
         
         # Get camera extrinsic parameters
-        # pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5, pose_type='extrinsic')
-        # closest_index = timestamp_match(timestamp_list, timestamp)
-        # pose = pose_list[closest_index]
+        pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5, pose_type='extrinsic')
+        closest_index = timestamp_match(timestamp_list, timestamp)
+        pose = pose_list[closest_index]
         
         start_time = time.time()
         # Direct point cloud calculation from RGB and depth images
@@ -314,6 +315,7 @@ class Hexmove():
         fy = camera_param.rgb_intrinsic.fy
         cx = camera_param.rgb_intrinsic.cx
         cy = camera_param.rgb_intrinsic.cy
+        print(f"fx: {fx}, fy: {fy}, cx: {cx}, cy: {cy}")
         depth_scale = 0.001  # Convert from millimeters to meters
         
         # Create a grid of pixel coordinates
@@ -403,16 +405,19 @@ class Hexmove():
                 ext_dir = os.path.join(base_dir, 'ext')
                 pc_dir = os.path.join(base_dir, 'pointcloud')
                 depth_dir = os.path.join(base_dir, 'depth')
+                pose_dir = os.path.join(base_dir, 'pose')
             else:
                 base_dir = os.path.dirname(os.path.dirname(self.save_rdt_image_dir.format(save_dir, episode_index, position)))
                 ext_dir = os.path.join(base_dir, 'ext')
                 pc_dir = os.path.join(base_dir, 'pointcloud')
                 depth_dir = os.path.join(base_dir, 'depth')
+                pose_dir = os.path.join(base_dir, 'pose')
             
             # Create directories
             os.makedirs(ext_dir, exist_ok=True)
             os.makedirs(pc_dir, exist_ok=True)
             os.makedirs(depth_dir, exist_ok=True)
+            os.makedirs(pose_dir, exist_ok=True)
             
             # Save RGB image with sequential naming
             rgb_image_path = os.path.join(ext_dir, f'{index:0>6}.jpg')
@@ -423,16 +428,23 @@ class Hexmove():
             depth_image_path = os.path.join(depth_dir, f'{index:0>6}.png')
             Image.fromarray(depth_image, mode='I;16').save(depth_image_path)
             print(f"Depth image saved at {depth_image_path}")
-            
+
+            # Save camera pose with sequential naming
+            pose_path = os.path.join(pose_dir, f'{index:0>6}.pkl')
+            with open(pose_path, 'wb') as f:
+                pickle.dump(pose, f)
+            print(f"Pose saved at {pose_path}")
+
             # Save point cloud with sequential naming
-            pc_path = os.path.join(pc_dir, f'{index:0>6}.txt')
-            np.savetxt(pc_path, point_cloud, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
-            end_time = time.time()
-            print(f"Point cloud saved at {pc_path} in {end_time - start_time:.2f} seconds.")
+            # pc_path = os.path.join(pc_dir, f'{index:0>6}.txt')
+            # np.savetxt(pc_path, point_cloud, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
+            # end_time = time.time()
+            # print(f"Point cloud saved at {pc_path} in {end_time - start_time:.2f} seconds.")
             
             return timestamp
         else:
-            return rgb_image_formatted, point_cloud, timestamp
+            # return rgb_image_formatted, point_cloud, timestamp
+            return
 
     def get_pointcloud(self, commond):
         camera_id = commond[1]
@@ -672,7 +684,7 @@ class Hexmove():
         
         if path_length < 0.2:
             self.robot_move_translation(position)
-            # self.robot_move_rotation(yaw)
+            self.robot_move_rotation(yaw)
         else:
             x, y = position
             rotation_0 = np.arctan2(y, x)
@@ -685,25 +697,29 @@ class Hexmove():
             roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
             self.robot_move_translation(position)
             # roll, pitch, rotation_1 = (R.from_euler('xyz', (0, 0, rotation_0)).inv() * R.from_euler('xyz', (0, 0, yaw))).as_euler('xyz')
-            # self.robot_move_rotation(yaw)
+            self.robot_move_rotation(yaw)
         return 'done'
     
     def robot_move_translation(self, position):
         x, y = position
         x = x / 1.0 * 1.0
         y = y / 1.0 * 1.0
-        speed = 0.0035
+        # speed = 0.0035
+        speed = 0.001095
+        speed = 0.0009
         distance = np.linalg.norm(position)
         t = int(distance / speed)
-        speed_x = 100 * speed * x / distance
-        speed_y = 100 * speed * y / distance
+        # speed_x = 0.1 * speed * x / distance
+        # speed_y = 0.1 * speed * y / distance
+        speed_x = 0.1 * x / distance
+        speed_y = 0.1 * y / distance
         if t > 0:
             os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: ' + str(speed_x) + ', y: ' + str(speed_y) + ', z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" -r 100 -t ' + str(t))
         return 'done'
 
     def robot_move_rotation(self, yaw):
         yaw = yaw / np.pi * 180
-        t = abs(int(yaw / 90 * 1000))
+        t = abs(int(yaw / 90 * 850))
         if t > 0:
             if yaw > 0:
                 os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.2}}" -r 100 -t ' + str(t))

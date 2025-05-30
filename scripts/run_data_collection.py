@@ -8,7 +8,7 @@ import shutil
 
 def main():
     episode_index = 0 # Default starting index
-    base_data_dir = "/home/tl/yh/data/idp3_0502" # Define base data directory
+    base_data_dir = "/home/tl/yh/data/test" # Define base data directory
     dataset_id = os.path.basename(base_data_dir)
 
     # Prompt user for starting episode index
