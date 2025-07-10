@@ -15,127 +15,15 @@ from .orbbec import OrbbecCamera
 from .piper import PiperArm
 from .base_odom import get_odom_pose, get_odom_xy_and_yaw, get_camera_xy_and_yaw
 from .point_cloud_generator import generate_point_cloud
+from .config import save_image_dir, save_rdt_image_dir, save_rdt_arm_pose_dir, device_list
 
 
 class Hexmove():
     def __init__(self) -> None:
-        self.save_image_dir = '/home/tl/yh/ModelServer/data/hexmove/images/{}'
-        self.save_rdt_image_dir = '/home/tl/yh/data/{}/episode_{:0>6}/rgb/{}'
-        self.save_rdt_arm_pose_dir = '/home/tl/yh/data/{}/episode_{:0>6}/pose'
-        self.supported_commonds = [
-            'robot_pose_reset',
-            'get_rgbd_image',
-            'get_rgb_image_rdt',
-            'get_rgbd_image_rdt',
-            'get_pointcloud',
-            'get_camera_intrinsic',
-            'get_camera_extrinsic',
-            'get_camera_xy_and_yaw',
-            'get_robot_pose',
-            'robot_move',
-            'robot_move_openloop',
-            'get_arm_pose',
-            'get_arm_pose_rdt',
-            "get_arm_pose_idp3",
-            'arm_reset',
-            'arm_prepare',
-            'arm_open_gripper',
-            'arm_close_gripper',
-            'arm_enable',
-            'arm_disable',
-            'arm_move_camera',
-            'arm_move_robot',
-            'arm_move_local',
-            'arm_end_pose_ctrl',
-            'arm_joint_ctrl',
-            'get_dual_arm_idp3'
-        ]
-        self.device_list = {
-            'D435i_top': {
-                'serial_number': '337322070914',
-                'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
-                                               [-1, 0, 0, 0],
-                                               [0, -1, 0, 1.3],
-                                               [0, 0, 0, 1]]),
-            },
-            'D435i_down': {
-                'serial_number': '327122078142',
-                'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
-                                               [-1, 0, 0, 0],
-                                               [0, -1, 0, 0.88],
-                                               [0, 0, 0, 1]]),
-            },
-            'T265': {
-                'serial_number': '119622110447',
-                'T_robot_to_camera': np.array([[0, 0, -1, 0.35],
-                                               [-1, 0, 0, 0],
-                                               [0, 1, 0, 0],
-                                               [0, 0, 0, 1]]),
-            },
-            'FemtoBolt_up': {
-                'serial_number': 'CL8M841005A',
-                'T_robot_to_camera': np.array([[0, 0, 1, 0.33],
-                                               [-1, 0, 0, 0],
-                                               [0, -1, 0, 1.42],
-                                               [0, 0, 0, 1]]),
-                'rotation': R.from_euler('xyz', (-np.pi / 180 * 50, 0, 0)).as_matrix()
-            },
-            'FemtoBolt_down': {
-                'serial_number': 'CL8M841006W',
-                'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
-                                               [-1, 0, 0, 0],
-                                               [0, -1, 0, 0.88],
-                                               [0, 0, 0, 1]]),
-                'rotation': R.from_euler('xyz', (-np.pi / 180 * 27, 0, 0)).as_matrix()
-            },
-            # '336L_down': {
-            #     'serial_number': 'CP828410001R',
-            #     'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
-            #                                    [-1, 0, 0, 0],
-            #                                    [0, -1, 0, 1.0],
-            #                                    [0, 0, 0, 1]]),
-            # },
-            '336L_head': {
-                'serial_number': 'CP82841000DE',
-                'T_robot_to_camera': np.array([[0, 0, 1, 0.43],
-                                               [-1, 0, 0, 0],
-                                               [0, -1, 0, 0.88],
-                                               [0, 0, 0, 1]]),
-            },
-            "336L_arm_right": {
-                "serial_number": "CP828410001R",
-                'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
-                                               [-1, 0, 0, 0],
-                                               [0, -1, 0, 1.0],
-                                               [0, 0, 0, 1]]),
-            },
-            "336L_arm_left": {
-                "serial_number": "CP84B410000V",
-                'T_robot_to_camera': np.array([[0, 0, 1, 0.35],
-                                               [-1, 0, 0, 0],
-                                               [0, -1, 0, 1.0],
-                                               [0, 0, 0, 1]]),
-            },
-            'arm_left': {
-                'can': 'can0',
-                'T_robot_to_arm': np.array([[1, 0, 0, 0.30],
-                                               [0, 1, 0, 0.335],
-                                               [0, 0, 1, 0.88],
-                                               [0, 0, 0, 1]]),
-            },
-            'arm_right': {
-                'can': 'can1',
-                'T_robot_to_arm': np.array([[1, 0, 0, 0.30],
-                                               [0, 1, 0, -0.335],
-                                               [0, 0, 1, 0.92],
-                                               [0, 0, 0, 1]]),
-            },
-        }
-        for device_id in self.device_list:
-            if 'rotation' in self.device_list[device_id]:
-                rotation = np.eye(4)
-                rotation[:3, :3] = self.device_list[device_id]['rotation']
-                self.device_list[device_id]['T_robot_to_camera'] = self.device_list[device_id]['T_robot_to_camera'] @ rotation
+        self.save_image_dir = save_image_dir
+        self.save_rdt_image_dir = save_rdt_image_dir
+        self.save_rdt_arm_pose_dir = save_rdt_arm_pose_dir
+        self.device_list = device_list
         self.tracking_method = 'odom'
         self.tracking_method = 'MASt3R-SLAM'
         self.tracking_method = 'T265'
@@ -152,15 +40,14 @@ class Hexmove():
         # self.init_device("336L_arm_left")
         
         
-    def __call__(self, commond):
-        action = commond[0]
+    def base_action(self, action):
         if action == 'move_forward':
             os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 1.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" -1')
             return 'move_forward done'
         elif action == 'move_backward':
             os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: -1.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" -1')
             return 'move_backward done'
-        elif action == 'move_left':
+        elif action == 'move_left depth':
             os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 1.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" -1')
             return 'move_left done'
         elif action == 'move_right':
@@ -196,33 +83,24 @@ class Hexmove():
         elif action == 'turn_360':
             os.system('ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.0}}" -r 100 -t 650')
             return 'turn_360 done'
-        
-        if hasattr(self, commond[0]):
-            return getattr(self, commond[0])(commond)
-        else:
-            return 'Unsupported command.'
 
-    def robot_pose_reset(self, commond=None):
+    def robot_pose_reset(self):
         self.robot_pose_origin, timestamp = self.get_robot_pose_zero()
         self.robot_pose_reset_done = True
         return 'done'
 
-    def get_rgbd_image(self, commond):
-        camera_id = commond[1]
-        if 'png' in commond or 'PNG' in commond:
-            format = 'PNG'
-        elif 'jpg' in commond or 'jpeg' in commond or 'JPG' in commond or 'JPEG' in commond:
-            format = 'JPEG'
-        else:
-            format = 'array'
+    def test_sleep(self):
+        for i in range(10):
+            time.sleep(1)
+            print(f"sleep {i} seconds")
+        return 'done'
+
+    def get_rgbd_image(self, camera_id=None, pose=False, format='array', save=False, pose_type='extrinsic', without_depth=False):
         serial_number = self.device_list[camera_id]['serial_number']
         self.init_device(camera_id)
         camera_param = None
         pose = None
-        pose_type = 'extrinsic'
-        if 'xy_and_yaw' in commond:
-            pose_type = 'xy_and_yaw'
-        if 'pose' in commond:
+        if pose:
             pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5, pose_type=pose_type)
             rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
             closest_index = timestamp_match(timestamp_list, timestamp)
@@ -230,7 +108,7 @@ class Hexmove():
             camera_param = self.device_list[camera_id]['device'].capture_camera_param()
         else:
             rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
-        if 'save' in commond:
+        if save:
             self.save_image(serial_number, rgb_image, depth_image, camera_param, pose, timestamp)
         if format in ['PNG', 'JPEG']:
             rgb_byte_io = io.BytesIO()
@@ -239,33 +117,18 @@ class Hexmove():
             elif format == 'JPEG':
                 Image.fromarray(rgb_image).save(rgb_byte_io, format='JPEG', quality=90)
             rgb_image = rgb_byte_io
-        if 'pose' in commond:
-            if 'without_depth' in commond:
+        if pose:
+            if without_depth:
                 return rgb_image, pose, timestamp
             else:
                 return rgb_image, depth_image, pose, timestamp
         else:
-            if 'without_depth' in commond:
+            if without_depth:
                 return rgb_image, timestamp
             else:
                 return rgb_image, depth_image, timestamp
 
-    def get_rgb_image_rdt(self, commond):
-        camera_id = commond[1]
-        if 'save' in commond:
-            episode_index = commond[2]
-            index = commond[3]
-            position = commond[4]
-        if 'png' in commond or 'PNG' in commond:
-            format = 'PNG'
-        elif 'jpg' in commond or 'jpeg' in commond or 'JPG' in commond or 'JPEG' in commond:
-            format = 'JPEG'
-        else:
-            format = 'array'
-        save_dir = None
-        if len(commond) >= 7:
-            save_dir = commond[6]
-
+    def get_rgb_image_rdt(self, camera_id, episode_index=None, index=None, position=None, format='array', save=False, save_dir=None):
         # self.init_device(camera_id)
         rgb_image, timestamp = self.device_list[camera_id]['device'].capture_rgb_image()
 
@@ -277,28 +140,13 @@ class Hexmove():
                 Image.fromarray(rgb_image).save(rgb_byte_io, format='JPEG', quality=90)
             rgb_image = rgb_byte_io
 
-        if 'save' in commond:
+        if save:
             self.save_image_rdt(rgb_image, position, episode_index, index, save_dir=save_dir)
             return timestamp
         else:
             return rgb_image, timestamp
 
-    def get_rgbd_image_rdt(self, commond):
-        camera_id = commond[1]
-        if 'save' in commond:
-            episode_index = commond[2]
-            index = commond[3]
-            position = commond[4]
-        if 'png' in commond or 'PNG' in commond:
-            format = 'PNG'
-        elif 'jpg' in commond or 'jpeg' in commond or 'JPG' in commond or 'JPEG' in commond:
-            format = 'JPEG'
-        else:
-            format = 'array'
-        save_dir = None
-        if len(commond) >= 7:
-            save_dir = commond[6]
-
+    def get_rgbd_image_rdt(self, camera_id, episode_index=None, index=None, position=None, format='array', save=False, save_dir=None):
         # self.init_device(camera_id)
         rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
         camera_param = self.device_list[camera_id]['device'].capture_camera_param()
@@ -372,7 +220,7 @@ class Hexmove():
             
             # Return sampled points
             return point_cloud[indices]
-            
+        
         # Apply grid sampling instead of random sampling
         if point_cloud.shape[0] > 4096:
             point_cloud = grid_sample_pcd(point_cloud, grid_size=0.01)  # Adjust grid_size as needed
@@ -396,7 +244,7 @@ class Hexmove():
         else:
             rgb_image_formatted = rgb_image
 
-        if 'save' in commond:
+        if save:
             start_time = time.time()
             
             # Create directory structure with ext folder
@@ -405,19 +253,19 @@ class Hexmove():
                 ext_dir = os.path.join(base_dir, 'ext')
                 pc_dir = os.path.join(base_dir, 'pointcloud')
                 depth_dir = os.path.join(base_dir, 'depth')
-                pose_dir = os.path.join(base_dir, 'pose')
+                # pose_dir = os.path.join(base_dir, 'pose')
             else:
                 base_dir = os.path.dirname(os.path.dirname(self.save_rdt_image_dir.format(save_dir, episode_index, position)))
                 ext_dir = os.path.join(base_dir, 'ext')
                 pc_dir = os.path.join(base_dir, 'pointcloud')
                 depth_dir = os.path.join(base_dir, 'depth')
-                pose_dir = os.path.join(base_dir, 'pose')
+                # pose_dir = os.path.join(base_dir, 'pose')
             
             # Create directories
             os.makedirs(ext_dir, exist_ok=True)
             os.makedirs(pc_dir, exist_ok=True)
             os.makedirs(depth_dir, exist_ok=True)
-            os.makedirs(pose_dir, exist_ok=True)
+            # os.makedirs(pose_dir, exist_ok=True)
             
             # Save RGB image with sequential naming
             rgb_image_path = os.path.join(ext_dir, f'{index:0>6}.jpg')
@@ -429,25 +277,22 @@ class Hexmove():
             Image.fromarray(depth_image, mode='I;16').save(depth_image_path)
             print(f"Depth image saved at {depth_image_path}")
 
-            # Save camera pose with sequential naming
-            pose_path = os.path.join(pose_dir, f'{index:0>6}.pkl')
-            with open(pose_path, 'wb') as f:
-                pickle.dump(pose, f)
-            print(f"Pose saved at {pose_path}")
+            # # Save camera pose with sequential naming
+            # pose_path = os.path.join(pose_dir, f'{index:0>6}.pkl')
+            # with open(pose_path, 'wb') as f:
+            #     pickle.dump(pose, f)
+            # print(f"Pose saved at {pose_path}")
 
             # Save point cloud with sequential naming
-            # pc_path = os.path.join(pc_dir, f'{index:0>6}.txt')
-            # np.savetxt(pc_path, point_cloud, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
-            # end_time = time.time()
-            # print(f"Point cloud saved at {pc_path} in {end_time - start_time:.2f} seconds.")
-            
+            pc_path = os.path.join(pc_dir, f'{index:0>6}.txt')
+            np.savetxt(pc_path, point_cloud, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
+            end_time = time.time()
+            print(f"Point cloud saved at {pc_path} in {end_time - start_time:.2f} seconds.")
             return timestamp
         else:
-            # return rgb_image_formatted, point_cloud, timestamp
-            return
+            return rgb_image_formatted, point_cloud, timestamp
 
-    def get_pointcloud(self, commond):
-        camera_id = commond[1]
+    def get_pointcloud(self, camera_id):
         if 'FemtoBolt' in camera_id or '336L' in camera_id:
             self.init_device(camera_id)
             serial_number = self.device_list[camera_id]['serial_number']
@@ -464,70 +309,51 @@ class Hexmove():
             np.savetxt(output_file_path_world, points, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
             return points
         else:
-            'Device cannot support get_pointcloud.'
+            return 'Device cannot support get_pointcloud.'
 
-    def get_camera_intrinsic(self, commond):
-        camera_id = commond[1]
+    def get_camera_intrinsic(self, camera_id):
         self.init_device(camera_id)
         color_intrinsics, depth_intrinsics = self.device_list[camera_id]['device'].capture_intrinsic()
         return color_intrinsics, depth_intrinsics
 
-    def get_camera_extrinsic(self, commond):
-        camera_id = commond[1]
+    def get_camera_extrinsic(self, camera_id):
         camera_pose, timestamp = self.get_camera_pose(camera_id, pose_type='extrinsic')
         camera_extrinsic = camera_pose
         return camera_extrinsic, timestamp
 
-    def get_camera_xy_and_yaw(self, commond):
-        camera_id = commond[1]
-        # robot_pose, timestamp = self.get_robot_pose()
-        # camera_pose = robot_pose @ self.device_list[camera_id]['T_robot_to_camera']
-        # camera_position = camera_pose[:3, 3]
-        # position_x, position_y = camera_position[0], camera_position[1]
-        # orientation = robot_pose[:3, :3]
-        # roll, pitch, yaw = R.from_matrix(orientation).as_euler('xyz')
+    def get_camera_xy_and_yaw(self, camera_id):
         camera_pose, timestamp = self.get_camera_pose(camera_id, pose_type='xy_and_yaw')
         position_x, position_y, yaw = camera_pose
         return position_x, position_y, yaw
 
-    def get_robot_pose(self, commond=None):
+    def get_robot_pose(self):
         if not self.robot_pose_reset_done:
             self.robot_pose_reset()
         robot_pose, timestamp = self.get_robot_pose_zero()
         robot_pose = np.linalg.inv(self.robot_pose_origin) @ robot_pose
         return robot_pose, timestamp
 
-    def robot_move(self, commond):
-        self.goal = commond[1]
+    def robot_move(self, goal):
+        self.goal = goal
         while not self.reach_goal():
-            self.robot_move_openloop(commond)
+            self.robot_move_openloop(goal)
         return 'done'
     
-    def get_arm_pose(self, commond):
-        arm_id = commond[1]
+    def get_arm_pose(self, arm_id, save=False):
         self.init_device(arm_id)
         arm_end_pose, arm_joint, arm_gripper_pose, timestamp = self.device_list[arm_id]['device'].get_arm_pose()
-        if 'save' in commond:
+        if save:
             self.save_arm_pose(arm_id, arm_end_pose, arm_joint, arm_gripper_pose, timestamp)
         return arm_end_pose, arm_joint, arm_gripper_pose, timestamp
     
-    def get_arm_pose_rdt(self, commond):
-        arm_id = commond[1]
-        episode_index = commond[2]
-        index = commond[3]
+    def get_arm_pose_rdt(self, arm_id, episode_index, index, save=False):
         self.init_device(arm_id)
         arm_end_pose, arm_joint, arm_gripper_pose, timestamp = self.device_list[arm_id]['device'].get_arm_pose()
-        if 'save' in commond:
+        if save:
             self.save_arm_pose_rdt(arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, timestamp)
         return arm_end_pose, arm_joint, arm_gripper_pose, timestamp
 
-    def get_arm_pose_idp3(self, commond):
-        arm_id = commond[1]
-        episode_index = commond[2]
-        index = commond[3]
-        save_dir = None
-        if len(commond) >= 5:
-            save_dir = commond[5]
+    def get_arm_pose_idp3(self, arm_id, episode_index, index, save=False, save_dir=None):
         self.init_device(arm_id)
         self.init_device("arm_left")
         right_arm_end_pose, right_arm_joint, right_arm_gripper_pose, right_timestamp = self.device_list[arm_id]['device'].get_arm_pose()
@@ -536,86 +362,59 @@ class Hexmove():
         arm_joint = np.concatenate((left_arm_joint, right_arm_joint), axis=0)
         arm_gripper_pose = np.concatenate((left_arm_gripper_pose, right_arm_gripper_pose), axis=0)
 
-        if 'save' in commond:
+        if save:
             self.save_arm_pose_idp3(arm_end_pose, arm_joint, arm_gripper_pose, episode_index, index, left_timestamp, save_dir=save_dir)
         return arm_end_pose, arm_joint, arm_gripper_pose, left_timestamp
 
-    def arm_reset(self, commond):
-        arm_id = commond[1]
+    def arm_reset(self, arm_id):
         self.init_device(arm_id)
         self.device_list[arm_id]['device'].reset()
         return 'done'
     
-    def arm_prepare(self, commond):
-        arm_id = commond[1]
+    def arm_prepare(self, arm_id):
         self.init_device(arm_id)
         self.device_list[arm_id]['device'].prepare()
         return 'done'
     
-    def arm_open_gripper(self, commond):
-        arm_id = commond[1]
+    def arm_open_gripper(self, arm_id):
         self.init_device(arm_id)
         arm_gripper_pose = 1
         self.device_list[arm_id]['device'].arm_gripper_ctrl(arm_gripper_pose)
         return 'done'
     
-    def arm_close_gripper(self, commond):
-        arm_id = commond[1]
+    def arm_close_gripper(self, arm_id):
         self.init_device(arm_id)
         arm_gripper_pose = 0.42
         self.device_list[arm_id]['device'].arm_gripper_ctrl(arm_gripper_pose)
         return 'done'
     
-    def arm_enable(self, commond):
-        arm_id = commond[1]
+    def arm_enable(self, arm_id):
         self.init_device(arm_id)
         self.device_list[arm_id]['device'].enable()
         return 'done'
     
-    def arm_disable(self, commond):
-        arm_id = commond[1]
+    def arm_disable(self, arm_id):
         self.init_device(arm_id)
         self.device_list[arm_id]['device'].disable()
         return 'done'
 
-    def arm_move_camera(self, commond):
-        camera_id = commond[1]
+    def arm_move_camera(self, camera_id, arm_id, position, orientation=None):
         self.init_device(camera_id)
-        arm_id = commond[2]
-        position = commond[3]
-        if len(commond) >= 5:
-            orientation = commond[4]
-        else:
-            orientation = None
         pose = np.eye(4)
         pose[:3, 3] = np.array(position)
-        T_robot_to_camera = self.device_list[camera_id]['T_robot_to_camera']
-        pose = T_robot_to_camera @ pose
-        commond = (commond[0], commond[2], pose, orientation)
-        self.arm_move_robot(commond)
+        T_camera_to_robot = self.device_list[camera_id]['T_camera_to_robot']
+        pose = T_camera_to_robot @ pose
+        self.arm_move_robot(arm_id, pose, orientation)
         return 'done'
 
-    def arm_move_robot(self, commond):
-        arm_id = commond[1]
-        pose = commond[2]
-        if len(commond) >= 5:
-            orientation = commond[3]
-        else:
-            orientation = None
-        T_robot_to_arm = self.device_list[arm_id]['T_robot_to_arm']
-        pose = np.linalg.inv(T_robot_to_arm) @ pose
-        commond = (commond[0], commond[1], pose, orientation)
-        self.arm_move_local(commond)
+    def arm_move_robot(self, arm_id, pose, orientation=None):
+        T_arm_to_robot = self.device_list[arm_id]['T_arm_to_robot']
+        pose = np.linalg.inv(T_arm_to_robot) @ pose
+        self.arm_move_local(arm_id, pose, orientation)
         return 'done'
 
-    def arm_move_local(self, commond):
-        arm_id = commond[1]
+    def arm_move_local(self, arm_id, position, orientation=None):
         self.init_device(arm_id)
-        position = commond[2]
-        if len(commond) >= 5:
-            orientation = commond[3]
-        else:
-            orientation = None
         # orientation = pose[:3, :3]
         # position = pose[:3, 3] * 1000
         # position = pose * 1000
@@ -626,16 +425,12 @@ class Hexmove():
         self.device_list[arm_id]['device'].arm_end_pose_ctrl(arm_pose)
         return 'done'
 
-    def arm_end_pose_ctrl(self, commond):
-        arm_id = commond[1]
-        arm_end_pose = commond[2]
+    def arm_end_pose_ctrl(self, arm_id, arm_end_pose):
         self.init_device(arm_id)
         self.device_list[arm_id]['device'].arm_end_pose_ctrl(arm_end_pose)
         return 'done'
 
-    def arm_joint_ctrl(self, commond):
-        arm_id = commond[1]
-        arm_joint = commond[2]
+    def arm_joint_ctrl(self, arm_id, arm_joint):
         self.init_device(arm_id)
         self.device_list[arm_id]['device'].arm_joint_ctrl(arm_joint)
         return 'done'
@@ -655,7 +450,7 @@ class Hexmove():
                 can = self.device_list[device_id]['can']
                 self.device_list[device_id]['device'] = PiperArm(can)
 
-    def get_tracking_pose(self, commond=None):
+    def get_tracking_pose(self):
         self.init_device(self.tracking_method)
         position, orientation, timestamp = self.device_list[self.tracking_method]['device'].get_pose()
         orientation = R.from_quat(quat_wxyz_to_xyzw(orientation)).as_matrix()
@@ -664,17 +459,17 @@ class Hexmove():
         tracking_pose[:3, 3] = position
         return tracking_pose, timestamp
 
-    def get_robot_pose_zero(self, commond=None):
+    def get_robot_pose_zero(self):
         if self.tracking_method == 'odom':
             robot_pose, timestamp = get_odom_pose()
         elif self.tracking_method == 'T265':
             tracking_pose, timestamp = self.get_tracking_pose()
-            T_robot_to_camera = self.device_list[self.tracking_method]['T_robot_to_camera']
-            robot_pose = T_robot_to_camera @ tracking_pose @ np.linalg.inv(T_robot_to_camera)
+            T_camera_to_robot = self.device_list[self.tracking_method]['T_camera_to_robot']
+            robot_pose = T_camera_to_robot @ tracking_pose @ np.linalg.inv(T_camera_to_robot)
         return robot_pose, timestamp
 
-    def robot_move_openloop(self, commond):
-        self.goal = commond[1]
+    def robot_move_openloop(self, goal):
+        self.goal = goal
         robot_pose, timestamp = self.get_robot_pose()
         T = np.linalg.inv(robot_pose) @ self.goal
         orientation = T[:3, :3]
@@ -789,6 +584,7 @@ class Hexmove():
         else:
             arm_pose_dir = self.save_rdt_arm_pose_dir.format(save_dir, episode_index)
         os.makedirs(arm_pose_dir, exist_ok=True)
+        print(arm_pose_dir)
         arm_pose_path = os.path.join(arm_pose_dir, f'{index:0>6}.pkl')
         arm_pose = {
             'arm_end_pose': arm_end_pose,
@@ -808,7 +604,7 @@ class Hexmove():
     
     def get_camera_pose(self, camera_id, pose_type='extrinsic'):
         robot_pose, timestamp = self.get_robot_pose()
-        camera_pose = robot_pose @ self.device_list[camera_id]['T_robot_to_camera']
+        camera_pose = robot_pose @ self.device_list[camera_id]['T_camera_to_robot']
         if pose_type == 'extrinsic':
             return camera_pose, timestamp
         if pose_type == 'xy_and_yaw':
@@ -830,8 +626,7 @@ class Hexmove():
             timestamp_list.append(timestamp)
         return pose_list, timestamp_list
     
-    def get_dual_arm_idp3(self, commond):
-        arm_id = commond[1]
+    def get_dual_arm_idp3(self, arm_id):
         self.init_device(arm_id)
         self.init_device("arm_left")
         right_arm_end_pose, right_arm_joint, right_arm_gripper_pose, right_timestamp = self.device_list[arm_id]['device'].get_arm_pose()
@@ -840,3 +635,146 @@ class Hexmove():
         arm_joint = np.concatenate((left_arm_joint, right_arm_joint), axis=0)
         arm_gripper_pose = np.concatenate((left_arm_gripper_pose, right_arm_gripper_pose), axis=0)
         return arm_end_pose, arm_joint, arm_gripper_pose, left_timestamp
+    
+    def get_rgbd_image_fast(self, camera_id, episode_index=None, index=None, position=None, format='array', save=False, save_dir=None):
+        rgb_image, depth_image, timestamp = self.device_list[camera_id]['device'].capture_rgbd_image()
+        camera_param = self.device_list[camera_id]['device'].capture_camera_param()
+        
+        # # Get camera extrinsic parameters
+        # pose_list, timestamp_list = self.record_camera_pose(camera_id=camera_id, record_time=0.5, pose_type='extrinsic')
+        # closest_index = timestamp_match(timestamp_list, timestamp)
+        # pose = pose_list[closest_index]
+        
+        # start_time = time.time()
+        # # Direct point cloud calculation from RGB and depth images
+        # # Extract camera intrinsics
+        # fx = camera_param.rgb_intrinsic.fx
+        # fy = camera_param.rgb_intrinsic.fy
+        # cx = camera_param.rgb_intrinsic.cx
+        # cy = camera_param.rgb_intrinsic.cy
+        # print(f"fx: {fx}, fy: {fy}, cx: {cx}, cy: {cy}")
+        # depth_scale = 0.001  # Convert from millimeters to meters
+        
+        # # Create a grid of pixel coordinates
+        # height, width = depth_image.shape
+        # u, v = np.meshgrid(np.arange(width), np.arange(height))
+        
+        # # Convert depth image to meters
+        # z = depth_image.astype(np.float32) * depth_scale
+        
+        # # Filter out invalid depth values
+        # valid_mask = (z > 0) & (z < 10)  # Only keep points within reasonable distance
+        # u_valid = u[valid_mask]
+        # v_valid = v[valid_mask]
+        # z_valid = z[valid_mask]
+        
+        # # Calculate 3D coordinates
+        # x = (u_valid - cx) * z_valid / fx
+        # y = (v_valid - cy) * z_valid / fy
+        
+        # # Get RGB values for valid points
+        # colors = rgb_image[v_valid, u_valid]
+        
+        # # Combine points and colors
+        # points = np.column_stack((x, y, z_valid))
+        # point_cloud = np.hstack((points, colors))
+        
+        # end_time = time.time()
+        # print(f"Generation time: {end_time - start_time} seconds")
+
+        # start_time = time.time()
+        # # Grid sampling for point cloud
+        # def grid_sample_pcd(point_cloud, grid_size=0.005):
+        #     """
+        #     A simple grid sampling function for point clouds.
+
+        #     Parameters:
+        #     - point_cloud: A NumPy array of shape (N, 3) or (N, 6), where N is the number of points.
+        #                 The first 3 columns represent the coordinates (x, y, z).
+        #                 The next 3 columns (if present) can represent additional attributes like color or normals.
+        #     - grid_size: Size of the grid for sampling.
+
+        #     Returns:
+        #     - A NumPy array of sampled points with the same shape as the input but with fewer rows.
+        #     """
+        #     coords = point_cloud[:, :3]  # Extract coordinates
+        #     scaled_coords = coords / grid_size
+        #     grid_coords = np.floor(scaled_coords).astype(int)
+            
+        #     # Create unique grid keys
+        #     keys = grid_coords[:, 0] + grid_coords[:, 1] * 10000 + grid_coords[:, 2] * 100000000
+            
+        #     # Select unique points based on grid keys
+        #     _, indices = np.unique(keys, return_index=True)
+            
+        #     # Return sampled points
+        #     return point_cloud[indices]
+            
+        # # Apply grid sampling instead of random sampling
+        # if point_cloud.shape[0] > 4096:
+        #     point_cloud = grid_sample_pcd(point_cloud, grid_size=0.01)  # Adjust grid_size as needed
+        #     print(f"sampled point cloud shape: {point_cloud.shape}")
+        #     # If still too many points after grid sampling, subsample further
+        #     if point_cloud.shape[0] > 4096:
+        #         point_cloud = point_cloud[np.random.choice(point_cloud.shape[0], 4096, replace=False), :]
+        
+        # # print cloud shape
+        # print(f"Point cloud shape after doublesampling: {point_cloud.shape}")
+        # end_time = time.time()
+        # print(f"Sampling time: {end_time - start_time} seconds")
+        
+        if format in ['PNG', 'JPEG']:
+            rgb_byte_io = io.BytesIO()
+            if format == 'PNG':
+                Image.fromarray(rgb_image).save(rgb_byte_io, format='PNG', optimize=True)
+            elif format == 'JPEG':
+                Image.fromarray(rgb_image).save(rgb_byte_io, format='JPEG', quality=90)
+            rgb_image_formatted = rgb_byte_io
+        else:
+            rgb_image_formatted = rgb_image
+        if save:
+            if save_dir is None:
+                base_dir = os.path.dirname(os.path.dirname(self.save_rdt_image_dir.format('arm_right', episode_index, position)))
+                ext_dir = os.path.join(base_dir, 'ext')
+                # pc_dir = os.path.join(base_dir, 'pointcloud')
+                depth_dir = os.path.join(base_dir, 'depth')
+                # pose_dir = os.path.join(base_dir, 'pose')
+            else:
+                base_dir = os.path.dirname(os.path.dirname(self.save_rdt_image_dir.format(save_dir, episode_index, position)))
+                ext_dir = os.path.join(base_dir, 'ext')
+                # pc_dir = os.path.join(base_dir, 'pointcloud')
+                depth_dir = os.path.join(base_dir, 'depth')
+                # pose_dir = os.path.join(base_dir, 'pose')
+            
+            # Create directories
+            os.makedirs(ext_dir, exist_ok=True)
+            # os.makedirs(pc_dir, exist_ok=True)
+            os.makedirs(depth_dir, exist_ok=True)
+            # os.makedirs(pose_dir, exist_ok=True)
+            
+            # Save RGB image with sequential naming
+            rgb_image_path = os.path.join(ext_dir, f'{index:0>6}.jpg')
+            Image.fromarray(rgb_image).save(rgb_image_path)
+            print(f"RGB image saved at {rgb_image_path}")
+            
+            # Save depth image with sequential naming
+            depth_image_path = os.path.join(depth_dir, f'{index:0>6}.png')
+            Image.fromarray(depth_image, mode='I;16').save(depth_image_path)
+            print(f"Depth image saved at {depth_image_path}")
+
+            # # Save camera pose with sequential naming
+            # pose_path = os.path.join(pose_dir, f'{index:0>6}.pkl')
+            # with open(pose_path, 'wb') as f:
+            #     pickle.dump(pose, f)
+            # print(f"Pose saved at {pose_path}")
+
+            # Save point cloud with sequential naming
+            # pc_path = os.path.join(pc_dir, f'{index:0>6}.txt')
+            # np.savetxt(pc_path, point_cloud, fmt='%.6f', delimiter=' ', header='X Y Z R G B')
+            # end_time = time.time()
+            # print(f"Point cloud saved at {pc_path} in {end_time - start_time:.2f} seconds.")
+            
+            return timestamp
+        else:
+            # return rgb_image_formatted, point_cloud, timestamp
+            return
