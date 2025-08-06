@@ -48,15 +48,8 @@ async def root() -> Dict[str, str]:
     return {
         "message": "Model Server API",
         "docs": "/docs",
-        "health": "/health",
         "process": "/api/process"
     }
-
-
-@app.get("/health")
-async def health_check() -> Dict[str, str]:
-    """健康检查端点"""
-    return {"status": "healthy", "message": "服务器运行正常"}
 
 
 @app.post("/api/process")
@@ -157,7 +150,7 @@ def start_server(model_instance, host="0.0.0.0", port=8000, reload=False):
         if model_instance is None:
             raise ValueError("模型实例不能为空")
         
-        print(f"📦 使用模型实例: {type(model_instance).__name__}")
+        print(f"📦 模型类型: {type(model_instance).__name__}")
         
         # 设置模型实例
         set_model_instance(model_instance)
@@ -166,8 +159,6 @@ def start_server(model_instance, host="0.0.0.0", port=8000, reload=False):
         # 启动服务器
         print("🌐 启动Web服务器...")
         print(f"📍 服务器地址: http://{host}:{port}")
-        print(f"📚 API文档: http://localhost:{port}/docs")
-        print(f"💚 健康检查: http://localhost:{port}/health")
         print("=" * 50)
         
         run_server(host=host, port=port, reload=reload)

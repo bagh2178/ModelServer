@@ -48,15 +48,6 @@ class ModelClient:
         except json.JSONDecodeError as e:
             raise Exception(f"响应解析失败: {str(e)}")
     
-    def get_health(self) -> Dict[str, Any]:
-        """
-        检查服务器健康状态
-        
-        Returns:
-            健康状态信息
-        """
-        return self._make_request("/health")
-    
     def __getattr__(self, name):
         """
         动态捕获未定义的方法调用，序列化name/args/kwargs分别发送到服务端。
@@ -86,7 +77,13 @@ class ModelClient:
                     raise Exception(f"结果反序列化失败: {str(e)}")
             else:
                 raise Exception(f"命令执行失败: {result.get('error', '未知错误')}")
-        return wrapper 
+        return wrapper
+    
+    def __call__(self, *args, **kwargs):
+        """
+        使客户端对象可调用
+        """
+        return self.__getattr__('__call__')(*args, **kwargs) 
 
 
 class Proxy:
@@ -194,4 +191,10 @@ class AsyncMode:
             thread.start()
             return proxy
         return wrapper
+    
+    def __call__(self, *args, **kwargs):
+        """
+        使异步模式对象可调用
+        """
+        return self.__getattr__('__call__')(*args, **kwargs)
 

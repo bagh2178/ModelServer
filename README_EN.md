@@ -1,4 +1,5 @@
 # 🤖 ModelServer
+## Connect Everything: Remote Function and Class Calling
 
 [![中文](https://img.shields.io/badge/README-中文-red)](README.md)
 
@@ -65,7 +66,7 @@ You can use `your_model` just like a regular instance of `YourModelClass` and di
 
 ```python
 # 📷 Get RGB-D images
-rgb_image, depth_image, pose, timestamp = hexmove.get_rgbd_image('FemtoBolt_down', format='JPEG', pose=True)
+rgb, depth, pose, timestamp = hexmove.get_rgbd_image('336L_up', format='JPEG', pose=True)
 ```
 
 #### Async Mode Usage Example
@@ -74,12 +75,12 @@ In async mode, calling `your_model.async_mode.xxx()` immediately returns a `prox
 
 ```python
 # Async call through async_mode
-proxy = hexmove.async_mode.get_rgbd_image('FemtoBolt_down', format='JPEG', pose=True)
+proxy = hexmove.async_mode.get_rgbd_image('336L_up', format='JPEG', pose=True)
 
 # Other code can be executed here
 
 # Wait and get result (blocking wait for result)
-rgb_image, depth_image, pose, timestamp = proxy()  # or proxy.result
+rgb, depth, pose, timestamp = proxy()  # or proxy.result
 ```
 
 ## 🔧 Features
@@ -89,26 +90,6 @@ rgb_image, depth_image, pose, timestamp = proxy()  # or proxy.result
 - 📡 **Remote Calling** - Support for local and remote model calling
 - ⏩ **Async Support** - Support for asynchronous model inference and calling
 - 🔌 **Easy Integration** - Simple client API interface
-
-## 📝 Usage Examples
-
-### Basic Usage Flow
-
-1. **Start Server** 🚀
-   ```bash
-   python scripts/quickstart_server/hexmove.py
-   ```
-
-2. **Connect Client** 🔗
-   ```python
-   from ModelServer import hexmove
-   ```
-
-3. **Call Model Methods** 📞
-   ```python
-   # Get sensor data
-   rgb, depth, pose, ts = hexmove.get_rgbd_image('camera_id')
-   ```
 
 ## 🤝 Contributing
 

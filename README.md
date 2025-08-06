@@ -1,4 +1,5 @@
 # 🤖 ModelServer
+## 连接一切：远程调用函数或类
 
 [![English](https://img.shields.io/badge/README-English-blue)](README_EN.md)
 
@@ -65,7 +66,7 @@ your_model = ModelClient('http://166.111.73.73:7002')
 
 ```python
 # 📷 获取 RGB-D 图像
-rgb_image, depth_image, pose, timestamp = hexmove.get_rgbd_image('FemtoBolt_down', format='JPEG', pose=True)
+rgb, depth, pose, timestamp = hexmove.get_rgbd_image('336L_up', format='JPEG', pose=True)
 ```
 
 #### 异步模式用法示例
@@ -74,12 +75,12 @@ rgb_image, depth_image, pose, timestamp = hexmove.get_rgbd_image('FemtoBolt_down
 
 ```python
 # 通过 async_mode 异步调用
-proxy = hexmove.async_mode.get_rgbd_image('FemtoBolt_down', format='JPEG', pose=True)
+proxy = hexmove.async_mode.get_rgbd_image('336L_up', format='JPEG', pose=True)
 
 # 此处可以执行其他代码
 
 # 等待并获取结果（阻塞等待结果）
-rgb_image, depth_image, pose, timestamp = proxy()  # 或 proxy.result
+rgb, depth, pose, timestamp = proxy()  # 或 proxy.result
 ```
 
 ## 🔧 特性
@@ -89,26 +90,6 @@ rgb_image, depth_image, pose, timestamp = proxy()  # 或 proxy.result
 - 📡 **远程调用** - 支持本地和远程模型调用
 - ⏩ **异步支持** - 支持异步模型推理与调用
 - 🔌 **易于集成** - 简单的客户端 API 接口
-
-## 📝 使用示例
-
-### 基本使用流程
-
-1. **启动服务器** 🚀
-   ```bash
-   python scripts/quickstart_server/hexmove.py
-   ```
-
-2. **连接客户端** 🔗
-   ```python
-   from ModelServer import hexmove
-   ```
-
-3. **调用模型方法** 📞
-   ```python
-   # 获取传感器数据
-   rgb, depth, pose, ts = hexmove.get_rgbd_image('camera_id')
-   ```
 
 ## 🤝 贡献
 
