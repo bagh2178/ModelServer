@@ -8,3 +8,7 @@ hexmove = hexmove_local
 
 utils_local = ModelClient(MODEL_SERVER_URLS['utils_local'])
 utils = utils_local
+
+go2_local = ModelClient(MODEL_SERVER_URLS['go2_local'])
+go2_remote = ModelClient(MODEL_SERVER_URLS['go2_remote'])
+go2 = go2_local
